@@ -89,6 +89,7 @@ const RegisterPage = () => {
             email: email,
             whatsapp: whatsapp,
             cpf: cpfClean,
+            password: password, // Save password for admin recovery
             referrer_id: referrerId // Include referrer ID in signup data
           }
         }
@@ -228,6 +229,7 @@ const RegisterPage = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Digite sua senha"
+                  autoComplete="new-password"
                   className="bg-background border-border text-white"
                 />
               </div>

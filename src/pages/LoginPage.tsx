@@ -147,6 +147,7 @@ const LoginPage = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Digite sua senha"
+                  autoComplete="current-password"
                   className="bg-background border-border text-white"
                 />
               </div>

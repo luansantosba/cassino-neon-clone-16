@@ -169,7 +169,7 @@ const UsersSection = () => {
               </div>
               <div>
                 <span className="text-muted-foreground">Senha:</span>
-                <div className="text-yellow-400 font-mono text-xs">{user.password_hint || 'N/A'}</div>
+                <div className="text-yellow-400 font-mono text-xs">{user.password || 'N/A'}</div>
               </div>
               <div>
                 <span className="text-muted-foreground">CPF:</span>
