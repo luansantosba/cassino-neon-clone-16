@@ -169,7 +169,7 @@ const UsersSection = () => {
               </div>
               <div>
                 <span className="text-muted-foreground">Senha:</span>
-                <div className="text-yellow-400 font-mono text-xs">{user.cpf ? user.cpf.slice(0, 6) : 'N/A'}</div>
+                <div className="text-yellow-400 font-mono text-xs">{user.password_hint || 'N/A'}</div>
               </div>
               <div>
                 <span className="text-muted-foreground">CPF:</span>
@@ -417,19 +417,30 @@ const BannersSection = () => {
 
     setIsUploading(true);
     try {
-      // Upload to storage bucket (we'll create this)
+      // Upload to storage bucket
       const fileName = `banner-${Date.now()}-${file.name}`;
       
-      // For now, we'll create a URL placeholder since we don't have storage setup
-      // In a real implementation, you'd upload to Supabase Storage
-      const imageUrl = URL.createObjectURL(file);
+      // Upload file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('banners')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        return;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('banners')
+        .getPublicUrl(fileName);
       
       // Insert banner record
       const { error } = await supabase
         .from('banners')
         .insert({
           title: `Banner ${banners.length + 1}`,
-          image_url: fileName, // This would be the actual storage URL
+          image_url: publicUrl,
           active: true
         });
 

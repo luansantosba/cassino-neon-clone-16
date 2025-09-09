@@ -26,7 +26,11 @@ const PromoBanner = () => {
         if (dbBanners && dbBanners.length > 0) {
           // Convert database banners to display format
           const formattedBanners = dbBanners.map(banner => ({
-            src: banner.image_url.startsWith('/') ? banner.image_url : `/lovable-uploads/${banner.image_url}`,
+            src: banner.image_url.startsWith('http') 
+              ? banner.image_url 
+              : banner.image_url.startsWith('/lovable-uploads/') 
+                ? banner.image_url 
+                : `/lovable-uploads/${banner.image_url}`,
             alt: banner.title
           }));
           setBanners(formattedBanners);
