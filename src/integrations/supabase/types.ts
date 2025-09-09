@@ -1,0 +1,542 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.4"
+  }
+  public: {
+    Tables: {
+      banners: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          image_url: string | null
+          link_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          link_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          link_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      betting_options: {
+        Row: {
+          bet_name: string
+          category: string
+          created_at: string
+          id: string
+          match_id: string | null
+          odds: number
+          updated_at: string
+        }
+        Insert: {
+          bet_name: string
+          category: string
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          odds: number
+          updated_at?: string
+        }
+        Update: {
+          bet_name?: string
+          category?: string
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          odds?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "betting_options_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      championships: {
+        Row: {
+          country: string | null
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      deposits: {
+        Row: {
+          amount: number
+          confirmed_at: string | null
+          created_at: string | null
+          id: string
+          pix_key: string | null
+          qr_code_data: string | null
+          status: string | null
+          transaction_id: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          confirmed_at?: string | null
+          created_at?: string | null
+          id?: string
+          pix_key?: string | null
+          qr_code_data?: string | null
+          status?: string | null
+          transaction_id: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          confirmed_at?: string | null
+          created_at?: string | null
+          id?: string
+          pix_key?: string | null
+          qr_code_data?: string | null
+          status?: string | null
+          transaction_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      matches: {
+        Row: {
+          championship_id: string | null
+          created_at: string
+          external_id: string | null
+          id: string
+          match_date: string
+          match_time: string
+          odds_away: number | null
+          odds_draw: number | null
+          odds_home: number | null
+          team1: string
+          team2: string
+          updated_at: string
+        }
+        Insert: {
+          championship_id?: string | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          match_date: string
+          match_time: string
+          odds_away?: number | null
+          odds_draw?: number | null
+          odds_home?: number | null
+          team1: string
+          team2: string
+          updated_at?: string
+        }
+        Update: {
+          championship_id?: string | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          match_date?: string
+          match_time?: string
+          odds_away?: number | null
+          odds_draw?: number | null
+          odds_home?: number | null
+          team1?: string
+          team2?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_championship_id_fkey"
+            columns: ["championship_id"]
+            isOneToOne: false
+            referencedRelation: "championships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          balance: number | null
+          cpf: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          referral_id: string | null
+          referrer_id: string | null
+          updated_at: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          balance?: number | null
+          cpf?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          referral_id?: string | null
+          referrer_id?: string | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          balance?: number | null
+          cpf?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          referral_id?: string | null
+          referrer_id?: string | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          bonus_paid: boolean | null
+          created_at: string
+          deposit_made: boolean | null
+          id: string
+          referred_cpf: string
+          referred_user_id: string
+          referrer_id: string
+          updated_at: string
+        }
+        Insert: {
+          bonus_paid?: boolean | null
+          created_at?: string
+          deposit_made?: boolean | null
+          id?: string
+          referred_cpf: string
+          referred_user_id: string
+          referrer_id: string
+          updated_at?: string
+        }
+        Update: {
+          bonus_paid?: boolean | null
+          created_at?: string
+          deposit_made?: boolean | null
+          id?: string
+          referred_cpf?: string
+          referred_user_id?: string
+          referrer_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tips: {
+        Row: {
+          analysis: string
+          created_at: string
+          date: string
+          external_id: string | null
+          id: string
+          league: string
+          match: string
+          odds: number | null
+          status: string
+          team1_logo: string | null
+          team2_logo: string | null
+          time: string
+          tip: string
+          updated_at: string
+        }
+        Insert: {
+          analysis: string
+          created_at?: string
+          date: string
+          external_id?: string | null
+          id?: string
+          league: string
+          match: string
+          odds?: number | null
+          status?: string
+          team1_logo?: string | null
+          team2_logo?: string | null
+          time: string
+          tip: string
+          updated_at?: string
+        }
+        Update: {
+          analysis?: string
+          created_at?: string
+          date?: string
+          external_id?: string | null
+          id?: string
+          league?: string
+          match?: string
+          odds?: number | null
+          status?: string
+          team1_logo?: string | null
+          team2_logo?: string | null
+          time?: string
+          tip?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_credentials: {
+        Row: {
+          cpf: string | null
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          password_hint: string | null
+          updated_at: string | null
+          user_id: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          cpf?: string | null
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          password_hint?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          cpf?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          password_hint?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      withdrawals: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          pix_key: string
+          processed_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          pix_key: string
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          pix_key?: string
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      add_balance: {
+        Args: { amount: number; user_id: string }
+        Returns: undefined
+      }
+      cpf_exists: {
+        Args: { cpf_input: string }
+        Returns: boolean
+      }
+      generate_referral_id: {
+        Args: { cpf_input: string }
+        Returns: string
+      }
+      process_referral_bonus: {
+        Args: { deposit_amount: number; referred_user_id: string }
+        Returns: undefined
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
