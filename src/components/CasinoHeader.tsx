@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const CasinoHeader = () => {
@@ -50,8 +51,20 @@ const CasinoHeader = () => {
     <div className="bg-casino-header p-4">
       {/* Top Header */}
       <div className="flex items-center justify-between">
-        <div className="text-2xl font-bold text-casino-gold">
-          Parimatch
+        <div className="flex items-center gap-3">
+          {isLoggedIn && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/menu")}
+              className="text-white hover:text-casino-gold"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
+          <div className="text-2xl font-bold text-casino-gold">
+            Parimatch
+          </div>
         </div>
         <div className="flex gap-2">
           {isLoggedIn ? (

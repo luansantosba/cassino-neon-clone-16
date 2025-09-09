@@ -1,24 +1,19 @@
-import { History, CreditCard, LogOut } from "lucide-react";
+import { Menu, Users, Gift, HeadphonesIcon } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 
 const mainNavItems = [
-  { icon: History, label: "Histórico", path: "/historico", active: false },
-  { icon: CreditCard, label: "Saque", path: "/saque", active: false },
-  { icon: LogOut, label: "Sair", path: "/logout", active: false }
+  { icon: Menu, label: "Menu", path: "/menu", active: false },
+  { icon: Users, label: "Afiliados", path: "/afiliados", active: false },
+  { icon: Gift, label: "Bônus", path: "/bonus", active: false },
+  { icon: HeadphonesIcon, label: "Suporte", path: "/suporte", active: false }
 ];
 
 const BottomNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleNavigation = async (path: string) => {
-    if (path === "/logout") {
-      await supabase.auth.signOut();
-      navigate("/login");
-    } else {
-      navigate(path);
-    }
+  const handleNavigation = (path: string) => {
+    navigate(path);
   };
 
   return (
