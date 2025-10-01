@@ -5,12 +5,12 @@ const PromoBanner = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
   const [banners, setBanners] = useState([
     {
-      src: "/lovable-uploads/cd09606b-d830-4809-a089-574677de6370.png",
-      alt: "Primeiro Depósito Triplicado"
+      src: "/lovable-uploads/banner-afiliados.png",
+      alt: "Indique e ganhe R$10 reais por cada indicação"
     },
     {
-      src: "/lovable-uploads/eeadbca5-e962-4664-a799-1da8cf545371.png",
-      alt: "Saldo Grátis Todo Dia No Login"
+      src: "/lovable-uploads/banner-sexta.png",
+      alt: "Saldo grátis toda SEXTA-FEIRA pra você se divertir"
     }
   ]);
 

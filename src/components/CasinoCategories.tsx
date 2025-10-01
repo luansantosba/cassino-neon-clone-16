@@ -2,18 +2,17 @@ import { Ticket, Gamepad2, CircleDot } from "lucide-react";
 
 const categories = [
   { id: "raspadinha", icon: Ticket, label: "Raspe e ganhe", color: "text-yellow-400" },
-  { id: "originais", icon: Gamepad2, label: "Originais", color: "text-purple-400" },
-  { id: "futebol", icon: CircleDot, label: "Futebol", color: "text-orange-400" }
+  { id: "double", icon: Gamepad2, label: "Double", color: "text-purple-400" }
 ];
 
-interface CasinoeCategoriesProps {
+interface CasinoCategoriesProps {
   selectedCategory: string;
   onCategorySelect: (category: string) => void;
 }
 
-const CasinoCategories = ({ selectedCategory, onCategorySelect }: CasinoeCategoriesProps) => {
+const CasinoCategories = ({ selectedCategory, onCategorySelect }: CasinoCategoriesProps) => {
   return (
-    <div className="grid grid-cols-3 gap-4 p-4 bg-background">
+    <div className="grid grid-cols-2 gap-4 p-4 bg-background">
       {categories.map((category, index) => {
         const Icon = category.icon;
         const isSelected = selectedCategory === category.id;

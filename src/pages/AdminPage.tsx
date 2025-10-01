@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Menu, X, Users, DollarSign, TrendingUp, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-type AdminSection = 'users' | 'withdrawals' | 'revenue' | 'banners' | null;
+type AdminSection = 'users' | 'withdrawals' | 'revenue' | 'banners' | 'support' | null;
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -28,7 +28,8 @@ const AdminPage = () => {
     { id: 'users' as AdminSection, label: 'Usuários', icon: Users },
     { id: 'withdrawals' as AdminSection, label: 'Saques', icon: DollarSign },
     { id: 'revenue' as AdminSection, label: 'Banca', icon: TrendingUp },
-    { id: 'banners' as AdminSection, label: 'Banners', icon: ImageIcon }
+    { id: 'banners' as AdminSection, label: 'Banners', icon: ImageIcon },
+    { id: 'support' as AdminSection, label: 'Suporte', icon: Menu }
   ];
 
   const handleLogout = async () => {
@@ -46,6 +47,8 @@ const AdminPage = () => {
         return <RevenueSection />;
       case 'banners':
         return <BannersSection />;
+      case 'support':
+        return <SupportRequestsSection />;
       default:
         return null;
     }
@@ -553,6 +556,57 @@ const BannersSection = () => {
                     ✕
                   </Button>
                 </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </Card>
+  );
+};
+
+const SupportRequestsSection = () => {
+  const [requests, setRequests] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadRequests = () => {
+      const savedRequests = JSON.parse(localStorage.getItem('supportRequests') || '[]');
+      setRequests(savedRequests);
+    };
+    loadRequests();
+  }, []);
+
+  const handleRemoveRequest = (id: string) => {
+    const updatedRequests = requests.filter(req => req.id !== id);
+    localStorage.setItem('supportRequests', JSON.stringify(updatedRequests));
+    setRequests(updatedRequests);
+  };
+
+  return (
+    <Card className="p-6 bg-casino-header/30 border-border">
+      <h2 className="text-white text-xl font-bold mb-4">Solicitações de Suporte</h2>
+      <div className="space-y-4">
+        {requests.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">Nenhuma solicitação pendente</p>
+        ) : (
+          requests.map(request => (
+            <div key={request.id} className="bg-background rounded-lg p-4 space-y-2">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="text-white font-bold">{request.name}</div>
+                  <div className="text-sm text-muted-foreground">{request.email}</div>
+                  <div className="text-white mt-2">{request.problem}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {new Date(request.createdAt).toLocaleString('pt-BR')}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => handleRemoveRequest(request.id)}
+                >
+                  Remover
+                </Button>
               </div>
             </div>
           ))

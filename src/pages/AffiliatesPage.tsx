@@ -117,18 +117,11 @@ const AffiliatesPage = () => {
     checkUser();
   }, [navigate]);
 
-  const copyReferralLink = () => {
+  const copyReferralCode = () => {
     if (userProfile?.referral_id) {
-      const referralLink = `${window.location.origin}/?ref=${userProfile.referral_id}`;
-      navigator.clipboard.writeText(referralLink);
-      toast.success("Link de indicação copiado!");
+      navigator.clipboard.writeText(userProfile.referral_id);
+      toast.success("Código de indicação copiado!");
     }
-  };
-
-  const formatCPF = (cpf: string) => {
-    if (!cpf) return '';
-    const cleaned = cpf.replace(/\D/g, '');
-    return `${cleaned.substring(0, 3)}.${cleaned.substring(3, 6)}.${cleaned.substring(6, 9)}-${cleaned.substring(9, 11)}`;
   };
 
   if (isLoading) {
@@ -171,8 +164,6 @@ const AffiliatesPage = () => {
     );
   }
 
-  const referralLink = `${window.location.origin}/?ref=${userProfile.referral_id}`;
-
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-md mx-auto">
@@ -191,31 +182,24 @@ const AffiliatesPage = () => {
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Referral ID Card */}
+          {/* Referral Code Card */}
           <Card className="p-6 bg-casino-header/30 border-border">
             <div className="text-center space-y-3">
-              <h2 className="text-white text-lg font-bold">Seu ID de Indicação</h2>
+              <h2 className="text-white text-lg font-bold">Seu Código de Indicação</h2>
               <div className="bg-background rounded-lg p-4">
-                <span className="text-casino-gold text-2xl font-mono font-bold">
+                <span className="text-casino-gold text-3xl font-mono font-bold tracking-widest">
                   {userProfile.referral_id}
                 </span>
-              </div>
-            </div>
-          </Card>
-
-          {/* Referral Link Card */}
-          <Card className="p-6 bg-casino-header/30 border-border">
-            <div className="space-y-3">
-              <h3 className="text-white font-bold">Link de Indicação</h3>
-              <div className="bg-background rounded-lg p-3 text-xs text-white break-all">
-                {referralLink}
+                <p className="text-xs text-muted-foreground mt-2">
+                  Compartilhe este código com seus amigos
+                </p>
               </div>
               <Button 
-                onClick={copyReferralLink}
+                onClick={copyReferralCode}
                 className="w-full bg-casino-gold hover:bg-casino-gold/80 text-black"
               >
                 <Copy className="h-4 w-4 mr-2" />
-                Copiar Link
+                Copiar Código
               </Button>
             </div>
           </Card>
@@ -245,9 +229,9 @@ const AffiliatesPage = () => {
           <Card className="p-6 bg-casino-header/30 border-border">
             <h3 className="text-white font-bold mb-3">Como Funciona</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p>• Compartilhe seu link de indicação</p>
-              <p>• Quando alguém se cadastrar e fizer um depósito de R$ 20</p>
-              <p>• Você ganha R$ 10 de bônus</p>
+              <p>• Compartilhe seu código de indicação (6 dígitos)</p>
+              <p>• O indicado usa seu código no cadastro</p>
+              <p>• Quando ele depositar R$ 20, você ganha R$ 10</p>
               <p>• O bônus é creditado automaticamente</p>
             </div>
           </Card>

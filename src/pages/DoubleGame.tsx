@@ -135,8 +135,8 @@ const DoubleGame = () => {
 
   // RNG - Random Number Generator with house edge manipulation
   const generateRNGResult = (playerBetColor: string) => {
-    // House edge: 75% house wins, 25% player wins
-    const shouldPlayerWin = Math.random() < 0.25;
+    // House edge: 78% house wins, 22% player wins
+    const shouldPlayerWin = Math.random() < 0.22;
     
     console.log(`RNG - Player bet: ${playerBetColor}, Should win: ${shouldPlayerWin}`);
     

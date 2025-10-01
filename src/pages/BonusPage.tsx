@@ -1,165 +1,147 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Calendar, Check, Trophy, Info, Menu, X } from "lucide-react";
+import { Calendar, Trophy, Info, Menu, X } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-
-interface DailyBonus {
-  day: number;
-  amount: number;
-  collected: boolean;
-}
-
-const dailyBonuses: DailyBonus[] = [
-  { day: 1, amount: 2.50, collected: false },
-  { day: 2, amount: 1.00, collected: false },
-  { day: 3, amount: 0.50, collected: false },
-  { day: 4, amount: 2.50, collected: false },
-  { day: 5, amount: 1.00, collected: false },
-  { day: 6, amount: 0.50, collected: false },
-  { day: 7, amount: 2.00, collected: false },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 const BonusPage = () => {
   const navigate = useNavigate();
-  const [bonuses, setBonuses] = useState<DailyBonus[]>(dailyBonuses);
   const [hasDeposited, setHasDeposited] = useState(false);
-  const [currentDay, setCurrentDay] = useState(1);
-  const [totalCollected, setTotalCollected] = useState(0);
+  const [balance, setBalance] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
   const [lastCollectedDate, setLastCollectedDate] = useState<string | null>(null);
+  const [canCollectToday, setCanCollectToday] = useState(false);
 
   useEffect(() => {
-    const depositStatus = localStorage.getItem('hasMinimumDeposit');
-    setHasDeposited(depositStatus === 'true');
+    const loadUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/login');
+        return;
+      }
 
-    const savedProgress = localStorage.getItem('dailyBonusProgress');
-    if (savedProgress) {
-      const progress = JSON.parse(savedProgress);
-      setBonuses(progress.bonuses);
-      setCurrentDay(progress.currentDay);
-      setTotalCollected(progress.totalCollected);
-      setLastCollectedDate(progress.lastCollectedDate);
-    }
-  }, []);
+      setUserId(user.id);
 
-  const canCollectToday = () => {
-    if (!hasDeposited) return false;
-    
-    const today = new Date().toDateString();
-    if (lastCollectedDate === today) return false;
-    
-    return currentDay <= 7;
-  };
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('balance')
+        .eq('id', user.id)
+        .single();
 
-  const collectDailyBonus = () => {
-    if (!canCollectToday()) return;
+      if (profile) {
+        setBalance(profile.balance || 0);
+      }
 
-    const todayBonus = bonuses[currentDay - 1];
-    const updatedBonuses = bonuses.map((bonus, index) => 
-      index === currentDay - 1 ? { ...bonus, collected: true } : bonus
-    );
+      // Check deposit status
+      const depositStatus = localStorage.getItem(`hasMinimumDeposit_${user.id}`);
+      setHasDeposited(depositStatus === 'true');
 
-    const newTotalCollected = totalCollected + todayBonus.amount;
-    const newCurrentDay = currentDay + 1;
-    const today = new Date().toDateString();
+      // Check last collected date
+      const savedLastCollected = localStorage.getItem(`lastBonusCollected_${user.id}`);
+      setLastCollectedDate(savedLastCollected);
 
-    setBonuses(updatedBonuses);
-    setCurrentDay(newCurrentDay);
-    setTotalCollected(newTotalCollected);
-    setLastCollectedDate(today);
-
-    // Add bonus to user balance
-    const userData = localStorage.getItem("casinoUser");
-    if (userData) {
-      const user = JSON.parse(userData);
-      const currentBalance = user.balance || 0;
-      user.balance = currentBalance + todayBonus.amount;
-      localStorage.setItem("casinoUser", JSON.stringify(user));
-    }
-
-    const progress = {
-      bonuses: updatedBonuses,
-      currentDay: newCurrentDay,
-      totalCollected: newTotalCollected,
-      lastCollectedDate: today
+      // Check if can collect today
+      checkIfCanCollect(savedLastCollected);
     };
-    localStorage.setItem('dailyBonusProgress', JSON.stringify(progress));
 
-    toast.success(`Parabéns! Você coletou R$ ${todayBonus.amount.toFixed(2)} em saldo real!`);
+    loadUserData();
+  }, [navigate]);
 
-    if (newCurrentDay > 7) {
-      toast.success("Ciclo completo! Faça um novo depósito para desbloquear outro ciclo.");
+  const checkIfCanCollect = (lastCollected: string | null) => {
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Sunday, 5 = Friday
+    const currentHour = now.getHours();
+
+    // Only Friday (5) at 12:00 or later
+    if (dayOfWeek !== 5) {
+      setCanCollectToday(false);
+      return;
+    }
+
+    if (currentHour < 12) {
+      setCanCollectToday(false);
+      return;
+    }
+
+    // Check if already collected this Friday
+    if (lastCollected) {
+      const lastCollectedDate = new Date(lastCollected);
+      const lastCollectedDay = lastCollectedDate.getDay();
+      const lastCollectedWeek = getWeekNumber(lastCollectedDate);
+      const currentWeek = getWeekNumber(now);
+
+      // If collected this Friday already, can't collect again
+      if (lastCollectedDay === 5 && lastCollectedWeek === currentWeek) {
+        setCanCollectToday(false);
+        return;
+      }
+    }
+
+    setCanCollectToday(true);
+  };
+
+  const getWeekNumber = (date: Date) => {
+    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+  };
+
+  const updateBalance = async (newBalance: number) => {
+    if (!userId) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ balance: newBalance })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Error updating balance:', error);
+      toast.error('Erro ao atualizar saldo');
+    } else {
+      setBalance(newBalance);
     }
   };
 
-  const resetCycle = () => {
-    setBonuses(dailyBonuses);
-    setCurrentDay(1);
-    setTotalCollected(0);
-    setLastCollectedDate(null);
-    localStorage.removeItem('dailyBonusProgress');
-    toast.success("Novo ciclo iniciado!");
+  const collectBonus = async () => {
+    if (!canCollectToday || !hasDeposited || !userId) return;
+
+    const bonusAmount = 5.00;
+    const newBalance = balance + bonusAmount;
+    
+    await updateBalance(newBalance);
+
+    const now = new Date().toISOString();
+    localStorage.setItem(`lastBonusCollected_${userId}`, now);
+    setLastCollectedDate(now);
+    setCanCollectToday(false);
+
+    toast.success(`Parabéns! Você coletou R$ ${bonusAmount.toFixed(2)} de bônus!`);
   };
 
-  const simulateDeposit = () => {
-    setHasDeposited(true);
-    localStorage.setItem('hasMinimumDeposit', 'true');
-    toast.success("Depósito simulado! Agora você pode coletar os bônus diários.");
+  const getNextFridayDate = () => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const daysUntilFriday = (5 - dayOfWeek + 7) % 7 || 7;
+    const nextFriday = new Date(now);
+    nextFriday.setDate(now.getDate() + daysUntilFriday);
+    return nextFriday.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' });
   };
 
-  const getCardStatus = (bonus: DailyBonus) => {
-    if (bonus.collected) return 'collected';
-    if (!hasDeposited) return 'blocked';
-    if (bonus.day === currentDay && canCollectToday()) return 'available';
-    if (bonus.day < currentDay) return 'missed';
-    return 'pending';
+  const isFriday = () => {
+    return new Date().getDay() === 5;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'collected':
-        return <Check className="h-5 w-5 text-emerald-400" />;
-      case 'blocked':
-        return <Calendar className="h-5 w-5 text-muted-foreground" />;
-      case 'available':
-        return <Trophy className="h-5 w-5 text-casino-gold" />;
-      default:
-        return <Calendar className="h-5 w-5 text-muted-foreground" />;
-    }
+  const isFridayAfterNoon = () => {
+    const now = new Date();
+    return now.getDay() === 5 && now.getHours() >= 12;
   };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'collected':
-        return 'Coletado';
-      case 'blocked':
-        return 'Bloqueado';
-      case 'available':
-        return 'Disponível';
-      case 'missed':
-        return 'Perdido';
-      default:
-        return 'Pendente';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'collected':
-        return 'text-green-600';
-      default:
-        return 'text-muted-foreground';
-    }
-  };
-
-  const progressPercentage = (currentDay - 1) * (100 / 7);
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-md mx-auto">
-        {/* Header Card Fixo */}
+        {/* Header */}
         <div className="bg-casino-header/50 border-b border-border p-4 mb-4 flex items-center justify-between">
           <Button
             variant="ghost"
@@ -169,7 +151,7 @@ const BonusPage = () => {
           >
             <X className="h-4 w-4" />
           </Button>
-          <h1 className="text-foreground text-center flex-1">BÔNUS DIÁRIO</h1>
+          <h1 className="text-foreground text-center flex-1">BÔNUS SEMANAL</h1>
           <Button
             variant="ghost"
             size="icon"
@@ -181,22 +163,6 @@ const BonusPage = () => {
         </div>
 
         <div className="p-4 space-y-4">
-
-          {/* Progress Bar */}
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-muted-foreground">Progresso</span>
-              <span className="text-sm text-casino-gold">R$ {totalCollected.toFixed(2)}</span>
-            </div>
-            <Progress 
-              value={progressPercentage} 
-              className="h-2 [&>*]:bg-success" 
-            />
-            <p className="text-xs text-muted-foreground text-center mt-1">
-              Dia {Math.min(currentDay, 7)} de 7
-            </p>
-          </div>
-
           {/* Deposit Warning */}
           {!hasDeposited && (
             <Card className="mb-4 bg-muted/50 border-border">
@@ -209,71 +175,80 @@ const BonusPage = () => {
             </Card>
           )}
 
-          {/* Bonus Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            {bonuses.map((bonus) => {
-              const status = getCardStatus(bonus);
-              const isAvailable = status === 'available';
+          {/* Main Bonus Card */}
+          <Card className={`${canCollectToday && hasDeposited ? 'bg-casino-gold/10 border-casino-gold/30' : 'bg-casino-header/30 border-border'}`}>
+            <CardContent className="p-6 text-center space-y-4">
+              <div className="mb-2">
+                {canCollectToday && hasDeposited ? (
+                  <Trophy className="h-12 w-12 text-casino-gold mx-auto" />
+                ) : (
+                  <Calendar className="h-12 w-12 text-muted-foreground mx-auto" />
+                )}
+              </div>
               
-              return (
-                <Card 
-                  key={bonus.day}
-                  className={`
-                    transition-all duration-200
-                    ${status === 'collected' ? 'bg-emerald-950/30 border-emerald-800/50' : ''}
-                    ${status === 'blocked' ? 'bg-muted/30 border-muted' : ''}
-                    ${status === 'available' ? 'bg-casino-gold/10 border-casino-gold/30' : ''}
-                    ${status === 'pending' ? 'bg-card border-border' : ''}
-                    ${status === 'missed' ? 'bg-muted/20 border-muted' : ''}
-                  `}
-                >
-                  <CardContent className="p-3 text-center">
-                    <div className="mb-2">
-                      {getStatusIcon(status)}
-                    </div>
-                    <h3 className="text-foreground text-sm mb-1">
-                      Dia {bonus.day}
-                    </h3>
-                    <p className="text-casino-gold text-sm mb-2">
-                      R$ {bonus.amount.toFixed(2)}
-                    </p>
-                    <p className={`text-xs mb-2 ${getStatusColor(status)}`}>
-                      {getStatusText(status)}
-                    </p>
-                    {isAvailable && (
-                      <Button
-                        onClick={collectDailyBonus}
-                        size="sm"
-                        variant="success"
-                        className="w-full text-xs"
-                      >
-                        Coletar
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Reset Button */}
-          {currentDay > 7 && (
-            <Card className="bg-muted/30 border-border">
-              <CardContent className="p-4 text-center">
-                <p className="text-muted-foreground text-sm mb-3">
-                  Ciclo completo! Faça um novo depósito para continuar.
+              <h2 className="text-white text-2xl font-bold">
+                Bônus de Sexta-Feira
+              </h2>
+              
+              <div className="bg-background rounded-lg p-4">
+                <p className="text-casino-gold text-3xl font-bold">
+                  R$ 5,00
                 </p>
-                <Button 
-                  onClick={resetCycle}
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
+                <p className="text-xs text-muted-foreground mt-1">
+                  Grátis toda sexta-feira às 12:00
+                </p>
+              </div>
+
+              {/* Status Messages */}
+              {!hasDeposited && (
+                <p className="text-sm text-muted-foreground">
+                  Faça um depósito mínimo de R$ 10 para ativar o bônus
+                </p>
+              )}
+
+              {hasDeposited && !isFriday() && (
+                <p className="text-sm text-muted-foreground">
+                  Próximo bônus disponível em: {getNextFridayDate()}
+                </p>
+              )}
+
+              {hasDeposited && isFriday() && !isFridayAfterNoon() && (
+                <p className="text-sm text-muted-foreground">
+                  Bônus disponível hoje às 12:00 (meio-dia)
+                </p>
+              )}
+
+              {hasDeposited && !canCollectToday && isFridayAfterNoon() && (
+                <p className="text-sm text-muted-foreground">
+                  Você já coletou o bônus desta semana
+                </p>
+              )}
+
+              {canCollectToday && hasDeposited && (
+                <Button
+                  onClick={collectBonus}
+                  className="w-full bg-casino-gold hover:bg-casino-gold/80 text-black font-bold"
                 >
-                  Resetar Ciclo (Teste)
+                  Coletar Bônus
                 </Button>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
+
+          {/* How it works */}
+          <Card className="bg-casino-header/30 border-border">
+            <CardContent className="p-4">
+              <h3 className="text-white font-bold mb-3">Como Funciona</h3>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>• Bônus de R$ 5,00 grátis toda sexta-feira</p>
+                <p>• Disponível às 12:00 (meio-dia)</p>
+                <p>• Uma coleta por semana</p>
+                <p>• Não é acumulativo (se não coletar na sexta, perde)</p>
+                <p>• Requer depósito mínimo de R$ 10 para ativar</p>
+                <p>• Após o primeiro depósito, o bônus fica ativo para sempre</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

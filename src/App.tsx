@@ -8,7 +8,6 @@ import ScratchCardGame from "./pages/ScratchCardGame";
 import ScratchCard5to2500Game from "./pages/ScratchCard5to2500Game";
 import ScratchCard20to50000Game from "./pages/ScratchCard20to50000Game";
 import DoubleGame from "./pages/DoubleGame";
-import MinesGame from "./pages/MinesGame";
 
 import BonusPage from "./pages/BonusPage";
 import BonusRulesPage from "./pages/BonusRulesPage";
@@ -49,7 +48,6 @@ const App = () => (
           <Route path="/raspadinha-20-para-50000/regras" element={<ScratchCard20to50000RulesPage />} />
           
           <Route path="/double" element={<DoubleGame />} />
-          <Route path="/mines" element={<MinesGame />} />
           <Route path="/bonus" element={<BonusPage />} />
           <Route path="/bonus/regras" element={<BonusRulesPage />} />
           <Route path="/login" element={<LoginPage />} />

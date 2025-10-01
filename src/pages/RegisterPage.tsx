@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -10,32 +10,37 @@ import { supabase } from "@/integrations/supabase/client";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [confirmAge, setConfirmAge] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [referrerId, setReferrerId] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Check for referrer ID in URL parameters or localStorage
-    const ref = searchParams.get('ref') || localStorage.getItem('referrer_id');
-    if (ref && !localStorage.getItem('referrer_notified')) {
-      setReferrerId(ref);
-      // Mark that user has been notified to avoid repeated notifications
-      localStorage.setItem('referrer_notified', 'true');
+  const validateReferralCode = async (code: string): Promise<boolean> => {
+    if (!code || code.length !== 6) return false;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('referral_id', code)
+        .single();
+
+      return !error && !!data;
+    } catch {
+      return false;
     }
-  }, [searchParams]);
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validações frontend
     if (!name || !email || !whatsapp || !cpf || !password) {
-      toast.error("Preencha todos os campos!");
+      toast.error("Preencha todos os campos obrigatórios!");
       return;
     }
 
@@ -57,6 +62,20 @@ const RegisterPage = () => {
       return;
     }
 
+    // Validate referral code if provided
+    if (referralCode && referralCode.length > 0) {
+      if (referralCode.length !== 6) {
+        toast.error("O código de indicação deve ter exatamente 6 dígitos!");
+        return;
+      }
+
+      const isValidCode = await validateReferralCode(referralCode);
+      if (!isValidCode) {
+        toast.error("Código de indicação inválido!");
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
@@ -76,8 +95,6 @@ const RegisterPage = () => {
         return;
       }
 
-      // Usar o e-mail fornecido pelo usuário
-
       // Register with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email: email,
@@ -90,7 +107,7 @@ const RegisterPage = () => {
             whatsapp: whatsapp,
             cpf: cpfClean,
             password: password, // Save password for admin recovery
-            referrer_id: referrerId // Include referrer ID in signup data
+            referrer_id: referralCode || null // Include referrer ID in signup data
           }
         }
       });
@@ -114,13 +131,13 @@ const RegisterPage = () => {
       if (data.user) {
         console.log("User created:", data.user.id);
         
-        // If there's a referrer, create the referral record
-        if (referrerId && data.user.id) {
+        // If there's a referral code, create the referral record
+        if (referralCode && data.user.id) {
           try {
             const { error: referralError } = await supabase
               .from('referrals')
               .insert({
-                referrer_id: referrerId,
+                referrer_id: referralCode,
                 referred_user_id: data.user.id,
                 referred_cpf: cpfClean
               });
@@ -154,6 +171,12 @@ const RegisterPage = () => {
   const formatWhatsapp = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  };
+
+  const handleReferralCodeChange = (value: string) => {
+    // Only allow numbers and max 6 digits
+    const numbers = value.replace(/\D/g, '').slice(0, 6);
+    setReferralCode(numbers);
   };
 
   return (
@@ -234,6 +257,23 @@ const RegisterPage = () => {
                 />
               </div>
 
+              <div>
+                <label className="text-white text-sm block mb-2">
+                  Código de Indicação (Opcional)
+                </label>
+                <Input
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => handleReferralCodeChange(e.target.value)}
+                  placeholder="000000"
+                  className="bg-background border-border text-white text-center tracking-widest text-lg font-mono"
+                  maxLength={6}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Se você foi indicado, digite o código de 6 dígitos
+                </p>
+              </div>
+
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="age-confirm" 
@@ -257,16 +297,6 @@ const RegisterPage = () => {
               </Button>
 
               <div className="text-center">
-                {referrerId && (
-                  <div className="mb-4 p-3 bg-casino-gold/20 border border-casino-gold rounded-lg">
-                    <p className="text-casino-gold text-sm font-medium">
-                      Código de Indicação
-                    </p>
-                    <p className="text-white text-lg font-bold mt-1">
-                      {referrerId}
-                    </p>
-                  </div>
-                )}
                 <button
                   onClick={() => navigate("/login")}
                   className="text-casino-gold hover:underline text-sm"

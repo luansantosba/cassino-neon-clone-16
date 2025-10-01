@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import CasinoHeader from "@/components/CasinoHeader";
 import CasinoCategories from "@/components/CasinoCategories";
@@ -10,6 +10,16 @@ import BottomNavigation from "@/components/BottomNavigation";
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("raspadinha");
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  const handleCategorySelect = (category: string) => {
+    if (category === "double") {
+      // Navigate directly to Double game
+      navigate("/double");
+    } else {
+      setSelectedCategory(category);
+    }
+  };
 
   useEffect(() => {
     // Check for referrer ID in URL parameters
@@ -17,7 +27,7 @@ const Index = () => {
     if (ref) {
       // Store referrer ID in localStorage for registration
       localStorage.setItem('referrer_id', ref);
-      toast.success(`Você foi indicado! Cadastre-se e faça um depósito de R$ 20 para o seu indicador ganhar R$ 10 de bônus!`);
+      toast.success(`Você foi indicado! Use o código ${ref} no cadastro para ganhar bônus!`);
       
       // Remove ref parameter from URL to clean up
       const newUrl = window.location.origin + window.location.pathname;
@@ -31,7 +41,7 @@ const Index = () => {
       <PromoBanner />
       <CasinoCategories 
         selectedCategory={selectedCategory}
-        onCategorySelect={setSelectedCategory}
+        onCategorySelect={handleCategorySelect}
       />
       <GameGrid selectedCategory={selectedCategory} />
       <BottomNavigation />
