@@ -203,6 +203,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          last_bonus_date: string | null
           referral_id: string | null
           referrer_id: string | null
           updated_at: string | null
@@ -215,6 +216,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          last_bonus_date?: string | null
           referral_id?: string | null
           referrer_id?: string | null
           updated_at?: string | null
@@ -227,6 +229,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          last_bonus_date?: string | null
           referral_id?: string | null
           referrer_id?: string | null
           updated_at?: string | null
@@ -264,6 +267,36 @@ export type Database = {
           referred_user_id?: string
           referrer_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          problem_type: string
+          status: string
+          updated_at: string
+          user_email: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          problem_type: string
+          status?: string
+          updated_at?: string
+          user_email: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          problem_type?: string
+          status?: string
+          updated_at?: string
+          user_email?: string
         }
         Relationships: []
       }
