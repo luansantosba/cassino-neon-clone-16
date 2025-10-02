@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import { Menu, X, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const PRIZES = {
   "perdeu": { 
@@ -44,6 +45,7 @@ const ScratchCard20to50000 = () => {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [currentCartela, setCurrentCartela] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const getPrizeForCard = (cardNumber: number): string => {
     const cycle = ((cardNumber - 1) % 50) + 1;
@@ -64,6 +66,21 @@ const ScratchCard20to50000 = () => {
     if (cycle === 50) return "500-reais"; // Cartela 50: ganha 500 reais
     
     return "perdeu"; // Default fallback
+  };
+
+  // Balance helpers with Supabase
+  const updateBalance = async (newBalance: number) => {
+    if (!userId) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ balance: newBalance })
+      .eq('id', userId);
+    if (error) {
+      console.error('Error updating balance:', error);
+      toast.error('Erro ao atualizar saldo');
+    } else {
+      setBalance(newBalance);
+    }
   };
 
   const generateCard = (forGameNum?: number) => {
@@ -99,15 +116,7 @@ const ScratchCard20to50000 = () => {
     }
     
     const newBalance = balance - 20;
-    setBalance(newBalance);
-    
-    // Update balance in localStorage casinoUser
-    const userData = localStorage.getItem("casinoUser");
-    if (userData) {
-      const user = JSON.parse(userData);
-      user.balance = newBalance;
-      localStorage.setItem("casinoUser", JSON.stringify(user));
-    }
+    updateBalance(newBalance);
     
     const currentCard = gameNumber;
     setCurrentCartela(currentCard);
@@ -141,16 +150,7 @@ const ScratchCard20to50000 = () => {
     
     if (prize.value > 0) {
       const newBalance = balance + prize.value;
-      setBalance(newBalance);
-      
-      // Update balance in localStorage casinoUser
-      const userData = localStorage.getItem("casinoUser");
-      if (userData) {
-        const user = JSON.parse(userData);
-        user.balance = newBalance;
-        localStorage.setItem("casinoUser", JSON.stringify(user));
-      }
-      
+      updateBalance(newBalance);
       setLastResult(`Parabéns! Você ganhou ${prize.label.replace('VOCÊ GANHOU ', '')}`);
       setGameHistory(prev => [...prev, {result: 'win' as const, cartela: currentCartela, timestamp: Date.now(), prize: prize.label.replace('VOCÊ GANHOU ', '')}].slice(-5));
     } else {
@@ -202,31 +202,38 @@ const ScratchCard20to50000 = () => {
   };
 
   useEffect(() => {
-    // Load balance from casinoUser instead of fixed value
-    const userData = localStorage.getItem("casinoUser");
-    if (userData) {
-      const user = JSON.parse(userData);
-      setBalance(user.balance || 50);
-    } else {
-      setBalance(50); // Start with 50 reais if no user data
-    }
-    setGameNumber(1); // Reinicia sempre na cartela 1 ao carregar/recarregar
-    setActualGameNumber(1); // Reinicia contador de jogos
-    
-    // Inicializar canvas com fundo cinza
-    setTimeout(() => {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.globalCompositeOperation = 'source-over';
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = '#888888';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/login');
+        return;
       }
-    }, 100);
-  }, []);
+      setUserId(user.id);
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('balance')
+        .eq('id', user.id)
+        .single();
+      if (profile) {
+        setBalance(profile.balance || 0);
+      }
+      setGameNumber(1);
+      setActualGameNumber(1);
+      setTimeout(() => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#888888';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
+        }
+      }, 100);
+    };
+    load();
+  }, [navigate]);
 
   const currentPrize = prizeKey ? PRIZES[prizeKey as keyof typeof PRIZES] : PRIZES["perdeu"];
 

@@ -246,17 +246,9 @@ const ScratchCard = () => {
   };
 
   useEffect(() => {
-    // Load balance from casinoUser instead of fixed value
-    const userData = localStorage.getItem("casinoUser");
-    if (userData) {
-      const user = JSON.parse(userData);
-      setBalance(user.balance || 10);
-    } else {
-      setBalance(10); // Start with 10 reais if no user data
-    }
-    setGameNumber(1); // Reinicia sempre na cartela 1 ao carregar/recarregar
+    // Reinicia sempre na cartela 1 ao carregar/recarregar e inicializa o canvas
+    setGameNumber(1);
     
-    // Inicializar canvas com fundo cinza
     setTimeout(() => {
       const canvas = canvasRef.current;
       if (canvas) {

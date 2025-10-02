@@ -124,25 +124,11 @@ const UsersSection = () => {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        const { data: credentials } = await supabase
-          .from('user_credentials')
-          .select('*');
-
-        // Merge profiles with credentials
-        const enrichedUsers = profiles?.map(profile => {
-          const cred = credentials?.find(c => c.user_id === profile.id);
-          return {
-            ...profile,
-            ...cred
-          };
-        });
-
-        setUsers(enrichedUsers || []);
+        const { data, error } = await supabase.functions.invoke('list-users', { body: {} });
+        if (error) throw error;
+        // data shape: { users: [...] }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setUsers((data as any)?.users || []);
       } catch (error) {
         console.error('Error loading users:', error);
       } finally {
