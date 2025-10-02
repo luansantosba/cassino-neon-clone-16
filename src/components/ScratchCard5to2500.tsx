@@ -343,28 +343,6 @@ const ScratchCard5to2500 = () => {
             </div>
           </div>
 
-          {/* Histórico */}
-          <div className="mt-6">
-            <h3 className="text-white text-center text-sm mb-3">Histórico</h3>
-            <div className="bg-casino-header/30 rounded-lg p-4 max-h-32 overflow-y-auto">
-              {gameHistory.length === 0 ? (
-                <div className="text-center text-muted-foreground text-sm py-2">
-                  Nenhuma partida ainda
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {gameHistory.slice().reverse().map((game, index) => (
-                    <div key={`${game.timestamp}-${index}`} className="flex justify-start text-sm py-1">
-                      <span className="text-white">Cartela {String(game.cartela).padStart(2, '0')} = </span>
-                      <span className={game.result === 'win' ? 'text-green-500' : 'text-red-500'}>
-                        {game.result === 'win' ? 'Você ganhou' : 'Você perdeu'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
         {/* Exit Confirmation Dialog */}

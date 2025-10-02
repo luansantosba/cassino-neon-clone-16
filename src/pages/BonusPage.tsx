@@ -152,14 +152,7 @@ const BonusPage = () => {
             <X className="h-4 w-4" />
           </Button>
           <h1 className="text-foreground text-center flex-1">BÔNUS SEMANAL</h1>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/bonus/regras')}
-            className="h-8 w-8"
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
+          <div className="h-8 w-8"></div>
         </div>
 
         <div className="p-4 space-y-4">
@@ -191,7 +184,7 @@ const BonusPage = () => {
               </h2>
               
               <div className="bg-background rounded-lg p-4">
-                <p className="text-casino-gold text-3xl font-bold">
+                <p className="text-casino-gold text-xl font-bold">
                   R$ 5,00
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">

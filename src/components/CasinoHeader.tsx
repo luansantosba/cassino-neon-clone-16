@@ -63,7 +63,7 @@ const CasinoHeader = () => {
             </Button>
           )}
           <div className="text-2xl font-bold text-casino-gold">
-            Parimatch
+            BDC
           </div>
         </div>
         <div className="flex gap-2">

@@ -57,7 +57,7 @@ serve(async (req) => {
     body: JSON.stringify({
       amount: amount,
       currency: 'BRL',
-      description: 'Depósito Casino Parimatch'
+      description: 'Depósito Casino BDC'
     })
   })
   

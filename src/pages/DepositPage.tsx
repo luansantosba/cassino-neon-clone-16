@@ -11,9 +11,9 @@ import { isValidCPF, formatCPF } from "@/utils/cpfValidator";
 // Utility functions for PIX simulation
 const generatePixString = (amount: number, txId: string) => {
   // Formato padrão PIX do Banco Central
-  const pixKey = "pix@parimatch.com.br";
+  const pixKey = "pix@bdc.com.br";
   const amountStr = amount.toFixed(2).replace('.', '');
-  return `00020126580014BR.GOV.BCB.PIX0136${pixKey}0208Deposito52040000530398654${amountStr}5802BR5925PARIMATCH CASINO LTDA6009SAO PAULO61088000000062070503${txId.substr(-3)}6304`;
+  return `00020126580014BR.GOV.BCB.PIX0136${pixKey}0208Deposito52040000530398654${amountStr}5802BR5925BDC CASINO LTDA6009SAO PAULO61088000000062070503${txId.substr(-3)}6304`;
 };
 
 const generateRealisticQRCode = async (pixString: string, amount: number): Promise<string> => {
