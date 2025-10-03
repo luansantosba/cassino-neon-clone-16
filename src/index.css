@@ -125,6 +125,9 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior-x: none;
+    overflow-x: hidden;
+    touch-action: pan-y;
   }
 }
 

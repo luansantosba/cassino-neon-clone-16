@@ -190,18 +190,12 @@ const WithdrawalsSection = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-  const loadWithdrawals = async () => {
+    const loadWithdrawals = async () => {
       try {
-        // Load from proper withdrawals table
-        const { data: withdrawalData } = await supabase
-          .from('withdrawals')
-          .select(`
-            *,
-            profile:profiles!withdrawals_user_id_fkey(full_name, cpf)
-          `)
-          .order('created_at', { ascending: false });
-
-        setWithdrawals(withdrawalData || []);
+        const { data, error } = await supabase.functions.invoke('list-withdrawals', { body: {} });
+        if (error) throw error;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setWithdrawals((data as any)?.withdrawals || []);
       } catch (error) {
         console.error('Error loading withdrawals:', error);
       } finally {

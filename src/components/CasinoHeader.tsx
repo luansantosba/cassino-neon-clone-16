@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
+// Removed Menu button per requirement
 import { supabase } from "@/integrations/supabase/client";
 
 const CasinoHeader = () => {
@@ -52,16 +52,7 @@ const CasinoHeader = () => {
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {isLoggedIn && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/menu")}
-              className="text-white hover:text-casino-gold"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          )}
+          {/* Menu button removed (bottom nav already exists) */}
           <div className="text-2xl font-bold text-casino-gold">
             BDC
           </div>

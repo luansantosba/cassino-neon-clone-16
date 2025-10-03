@@ -20,13 +20,16 @@ const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const validateReferralCode = async (code: string): Promise<boolean> => {
-    if (!code || code.length !== 6) return false;
+    if (!code) return false;
+    const normalized = code.trim().toLowerCase();
+    const isValidFormat = /^bdc\d{3}$/.test(normalized);
+    if (!isValidFormat) return false;
 
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('id')
-        .eq('referral_id', code)
+        .eq('referral_id', normalized)
         .single();
 
       return !error && !!data;
@@ -64,14 +67,9 @@ const RegisterPage = () => {
 
     // Validate referral code if provided
     if (referralCode && referralCode.length > 0) {
-      if (referralCode.length !== 6) {
-        toast.error("O código de indicação deve ter exatamente 6 dígitos!");
-        return;
-      }
-
       const isValidCode = await validateReferralCode(referralCode);
       if (!isValidCode) {
-        toast.error("Código de indicação inválido!");
+        toast.error("Código de indicação inválido! Use o formato bdc123");
         return;
       }
     }
@@ -174,9 +172,13 @@ const RegisterPage = () => {
   };
 
   const handleReferralCodeChange = (value: string) => {
-    // Only allow numbers and max 6 digits
-    const numbers = value.replace(/\D/g, '').slice(0, 6);
-    setReferralCode(numbers);
+    const v = value.toLowerCase().replace(/\s+/g, '');
+    // Enforce prefix 'bdc' and up to 3 digits after
+    let normalized = v.startsWith('bdc') ? v : (v.startsWith('b') ? 'bdc' + v.slice(1) : v);
+    normalized = normalized.replace(/[^a-z0-9]/g, '');
+    if (!normalized.startsWith('bdc')) normalized = 'bdc';
+    const digits = normalized.slice(3).replace(/\D/g, '').slice(0, 3);
+    setReferralCode('bdc' + digits);
   };
 
   return (
@@ -265,7 +267,7 @@ const RegisterPage = () => {
                   type="text"
                   value={referralCode}
                   onChange={(e) => handleReferralCodeChange(e.target.value)}
-                  placeholder="000000"
+                  placeholder="bdc123"
                   className="bg-background border-border text-white text-center tracking-widest text-lg font-mono"
                   maxLength={6}
                 />

@@ -39,10 +39,10 @@ serve(async (req) => {
 
     console.log(`Balance added successfully for user ${user_id}`);
 
-    // Process referral bonus if applicable
+    // Process referral bonus if applicable (accumulated deposits >= 20)
     const { error: bonusError } = await supabase.rpc('process_referral_bonus', {
-      referred_user_id: user_id,
-      deposit_amount: amount
+      p_referred_user_id: user_id,
+      p_deposit_amount: amount
     });
 
     if (bonusError) {

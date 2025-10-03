@@ -30,42 +30,62 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/raspadinha" element={<ScratchCardGame />} />
-          <Route path="/raspadinha/regras" element={<ScratchCardRulesPage />} />
-          <Route path="/raspadinha-5-para-2500" element={<ScratchCard5to2500Game />} />
-          <Route path="/raspadinha-5-para-2500/regras" element={<ScratchCard5to2500RulesPage />} />
-          <Route path="/raspadinha-10-para-15000" element={<ScratchCard10to15000Game />} />
-          <Route path="/raspadinha-10-para-15000/regras" element={<ScratchCard10to15000RulesPage />} />
-          <Route path="/raspadinha-20-para-50000" element={<ScratchCard20to50000Game />} />
-          <Route path="/raspadinha-20-para-50000/regras" element={<ScratchCard20to50000RulesPage />} />
-          
-          <Route path="/double" element={<DoubleGame />} />
-          <Route path="/bonus" element={<BonusPage />} />
-          <Route path="/bonus/regras" element={<BonusRulesPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/cadastro" element={<RegisterPage />} />
-          <Route path="/depositar" element={<DepositPage />} />
-          <Route path="/pix-payment" element={<PixPaymentPage />} />
-          <Route path="/afiliados" element={<AffiliatesPage />} />
-          <Route path="/suporte" element={<SupportPage />} />
-          <Route path="/historico" element={<HistoryPage />} />
-          <Route path="/saque" element={<WithdrawalPage />} />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/menu" element={<MenuPage />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+import { useEffect } from 'react';
+import { supabase } from "@/integrations/supabase/client";
+
+const App = () => {
+  useEffect(() => {
+    // Try to grant weekly bonus when app loads and user is logged in
+    const run = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        try {
+          await supabase.functions.invoke('grant-weekly-bonus', { body: {} });
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+    run();
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/raspadinha" element={<ScratchCardGame />} />
+            <Route path="/raspadinha/regras" element={<ScratchCardRulesPage />} />
+            <Route path="/raspadinha-5-para-2500" element={<ScratchCard5to2500Game />} />
+            <Route path="/raspadinha-5-para-2500/regras" element={<ScratchCard5to2500RulesPage />} />
+            <Route path="/raspadinha-10-para-15000" element={<ScratchCard10to15000Game />} />
+            <Route path="/raspadinha-10-para-15000/regras" element={<ScratchCard10to15000RulesPage />} />
+            <Route path="/raspadinha-20-para-50000" element={<ScratchCard20to50000Game />} />
+            <Route path="/raspadinha-20-para-50000/regras" element={<ScratchCard20to50000RulesPage />} />
+            
+            <Route path="/double" element={<DoubleGame />} />
+            <Route path="/bonus" element={<BonusPage />} />
+            <Route path="/bonus/regras" element={<BonusRulesPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/cadastro" element={<RegisterPage />} />
+            <Route path="/depositar" element={<DepositPage />} />
+            <Route path="/pix-payment" element={<PixPaymentPage />} />
+            <Route path="/afiliados" element={<AffiliatesPage />} />
+            <Route path="/suporte" element={<SupportPage />} />
+            <Route path="/historico" element={<HistoryPage />} />
+            <Route path="/saque" element={<WithdrawalPage />} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/menu" element={<MenuPage />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
