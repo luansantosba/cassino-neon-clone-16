@@ -1,1 +1,10 @@
 project_id = "yhewlncfxsorfzcoryxd"
+
+[functions.list-users]
+verify_jwt = false
+
+[functions.list-withdrawals]
+verify_jwt = false
+
+[functions.grant-weekly-bonus]
+verify_jwt = false

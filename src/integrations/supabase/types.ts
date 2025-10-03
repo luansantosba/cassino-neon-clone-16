@@ -436,6 +436,10 @@ export type Database = {
         Args: { cpf_input: string }
         Returns: boolean
       }
+      generate_bdc_referral_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_referral_id: {
         Args: { cpf_input: string }
         Returns: string

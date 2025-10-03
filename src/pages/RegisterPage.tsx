@@ -272,7 +272,7 @@ const RegisterPage = () => {
                   maxLength={6}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Se você foi indicado, digite o código de 6 dígitos
+                  Se você foi indicado, digite o código (ex: bdc123)
                 </p>
               </div>
 

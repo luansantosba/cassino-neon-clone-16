@@ -41,8 +41,8 @@ serve(async (req) => {
 
     // Process referral bonus if applicable (accumulated deposits >= 20)
     const { error: bonusError } = await supabase.rpc('process_referral_bonus', {
-      p_referred_user_id: user_id,
-      p_deposit_amount: amount
+      referred_user_id: user_id,
+      deposit_amount: amount
     });
 
     if (bonusError) {
