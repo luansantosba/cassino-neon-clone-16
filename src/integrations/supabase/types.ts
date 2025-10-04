@@ -445,7 +445,7 @@ export type Database = {
         Returns: string
       }
       process_referral_bonus: {
-        Args: { deposit_amount: number; referred_user_id: string }
+        Args: { p_deposit_amount: number; p_referred_user_id: string }
         Returns: undefined
       }
     }
