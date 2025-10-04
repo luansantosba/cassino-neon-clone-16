@@ -547,20 +547,36 @@ const BannersSection = () => {
 
 const SupportRequestsSection = () => {
   const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadRequests = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('list-support-tickets', { body: {} });
+      if (error) throw error;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setRequests((data as any)?.tickets || []);
+    } catch (e) {
+      console.error('Error loading support tickets:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadRequests = () => {
-      const savedRequests = JSON.parse(localStorage.getItem('supportRequests') || '[]');
-      setRequests(savedRequests);
-    };
     loadRequests();
   }, []);
 
-  const handleRemoveRequest = (id: string) => {
-    const updatedRequests = requests.filter(req => req.id !== id);
-    localStorage.setItem('supportRequests', JSON.stringify(updatedRequests));
-    setRequests(updatedRequests);
+  const handleRemoveRequest = async (id: string) => {
+    try {
+      const { error } = await supabase.functions.invoke('delete-support-ticket', { body: { id } });
+      if ((error as any)) throw error;
+      setRequests(prev => prev.filter(req => req.id !== id));
+    } catch (e) {
+      console.error('Error deleting ticket:', e);
+    }
   };
+
+  if (loading) return <div className="text-white text-center">Carregando solicitações...</div>;
 
   return (
     <Card className="p-6 bg-casino-header/30 border-border">
@@ -573,11 +589,10 @@ const SupportRequestsSection = () => {
             <div key={request.id} className="bg-background rounded-lg p-4 space-y-2">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="text-white font-bold">{request.name}</div>
-                  <div className="text-sm text-muted-foreground">{request.email}</div>
-                  <div className="text-white mt-2">{request.problem}</div>
+                  <div className="text-white font-bold">{request.user_email}</div>
+                  <div className="text-white mt-2 whitespace-pre-wrap">{request.description}</div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    {new Date(request.createdAt).toLocaleString('pt-BR')}
+                    {new Date(request.created_at).toLocaleString('pt-BR')}
                   </div>
                 </div>
                 <Button

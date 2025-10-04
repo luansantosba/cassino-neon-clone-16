@@ -8,3 +8,12 @@ verify_jwt = false
 
 [functions.grant-weekly-bonus]
 verify_jwt = false
+
+[functions.create-support-ticket]
+verify_jwt = false
+
+[functions.list-support-tickets]
+verify_jwt = false
+
+[functions.delete-support-ticket]
+verify_jwt = false

@@ -17,36 +17,19 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Fetch withdrawals first
-    const { data: withdrawals, error: wError } = await supabase
-      .from("withdrawals")
+    const { data, error } = await supabase
+      .from("support_tickets")
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (wError) throw wError;
-
-    const userIds = [...new Set((withdrawals ?? []).map((w) => w.user_id).filter(Boolean))];
-
-    const { data: profiles, error: pError } = await supabase
-      .from("profiles")
-      .select("id, full_name, cpf")
-      .in("id", userIds);
-
-    if (pError) throw pError;
-
-    const profilesById = new Map((profiles ?? []).map((p) => [p.id, p]));
-
-    const enriched = (withdrawals ?? []).map((w) => ({
-      ...w,
-      profile: profilesById.get(w.user_id) || null,
-    }));
+    if (error) throw error;
 
     return new Response(
-      JSON.stringify({ withdrawals: enriched }),
+      JSON.stringify({ tickets: data ?? [] }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("list-withdrawals error:", error);
+    console.error("list-support-tickets error:", error);
     return new Response(
       JSON.stringify({ error: (error as Error).message || String(error) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

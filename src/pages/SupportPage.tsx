@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { X, Send } from "lucide-react";
 import { toast } from "sonner";
-
+import { supabase } from "@/integrations/supabase/client";
 type ChatMessage = {
   type: 'bot' | 'user';
   text: string;
@@ -42,41 +42,44 @@ const SupportPage = () => {
     setInputValue('');
 
     if (chatStep === 'initial') {
-      // User described their problem
+      if (userMessage.length < 50) {
+        toast.error('Descreva o problema com pelo menos 50 caracteres.');
+        return;
+      }
       setProblemDescription(userMessage);
       setChatStep('problem-asked');
-      addBotMessage('Entendi, o seu problema será enviado para a equipe responsável, digite o seu email usado no cadastrado');
+      addBotMessage('Entendi, o seu problema será enviado para a equipe responsável. Agora digite o seu email usado no cadastro e seu nome.');
       setTimeout(() => {
         setShowForm(true);
-      }, 2000);
+      }, 1000);
     }
   };
 
-  const handleSubmitDetails = () => {
+  const handleSubmitDetails = async () => {
     if (!userName.trim() || !userEmail.trim()) {
       toast.error('Por favor, preencha todos os campos');
       return;
     }
 
-    // Save support request to localStorage (will be shown in admin panel)
-    const supportRequests = JSON.parse(localStorage.getItem('supportRequests') || '[]');
-    const newRequest = {
-      id: Date.now().toString(),
-      name: userName,
-      email: userEmail,
-      problem: problemDescription,
-      createdAt: new Date().toISOString()
-    };
-    supportRequests.push(newRequest);
-    localStorage.setItem('supportRequests', JSON.stringify(supportRequests));
+    try {
+      const { data, error } = await supabase.functions.invoke('create-support-ticket', {
+        body: {
+          user_email: userEmail.trim(),
+          problem_type: 'general',
+          description: `Nome: ${userName.trim()} - Problema: ${problemDescription}`
+        }
+      });
 
-    setChatStep('completed');
-    setShowForm(false);
-    addBotMessage('A sua solicitação foi enviada para a nossa equipe, você receberá uma resposta em até 5 dias úteis no email que digitou acima.');
-    
-    setTimeout(() => {
-      setMessages(prev => [...prev, { type: 'bot', text: '' }]);
-    }, 3000);
+      if (error) throw error;
+
+      setChatStep('completed');
+      setShowForm(false);
+      toast.success('Sua solicitação foi enviada para o suporte.');
+      addBotMessage('A sua solicitação foi enviada para a nossa equipe, você receberá uma resposta em até 5 dias úteis no email informado.');
+    } catch (err) {
+      console.error('Erro ao enviar suporte:', err);
+      toast.error('Não foi possível enviar sua solicitação. Tente novamente.');
+    }
   };
 
   const handleEndChat = () => {
