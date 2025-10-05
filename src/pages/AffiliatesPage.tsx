@@ -53,10 +53,10 @@ const AffiliatesPage = () => {
         return;
       }
 
-      // If user doesn't have referral_id and has CPF, generate it
-      if (profile && !profile.referral_id && profile.cpf) {
+      // If user doesn't have referral_id or it's not in the new format, generate a bdc### code
+      if (profile && (!profile.referral_id || !/^bdc\d{3}$/.test(profile.referral_id))) {
         const { data: generatedId, error: generateError } = await supabase
-          .rpc('generate_referral_id', { cpf_input: profile.cpf });
+          .rpc('generate_bdc_referral_id');
 
         if (!generateError && generatedId) {
           // Update profile with generated referral_id
@@ -66,7 +66,7 @@ const AffiliatesPage = () => {
             .eq('id', user.id);
 
           if (!updateError) {
-            profile.referral_id = generatedId;
+            profile.referral_id = generatedId as string;
           }
         }
       }
@@ -117,10 +117,11 @@ const AffiliatesPage = () => {
     checkUser();
   }, [navigate]);
 
-  const copyReferralCode = () => {
+  const copyReferralLink = () => {
     if (userProfile?.referral_id) {
-      navigator.clipboard.writeText(userProfile.referral_id);
-      toast.success("Código de indicação copiado!");
+      const link = `https://betdoscrias.app/download?id=${userProfile.referral_id}`;
+      navigator.clipboard.writeText(link);
+      toast.success("Link de indicação copiado!");
     }
   };
 
@@ -185,21 +186,21 @@ const AffiliatesPage = () => {
           {/* Referral Code Card */}
           <Card className="p-6 bg-casino-header/30 border-border">
             <div className="text-center space-y-3">
-              <h2 className="text-white text-lg font-bold">Seu Código de Indicação</h2>
+              <h2 className="text-white text-lg font-bold">Seu Link de Indicação</h2>
               <div className="bg-background rounded-lg p-4">
-                <span className="text-casino-gold text-3xl font-mono font-bold tracking-widest">
-                  {userProfile.referral_id}
+                <span className="text-casino-gold text-sm md:text-base font-mono font-bold break-all">
+                  {`https://betdoscrias.app/download?id=${userProfile.referral_id}`}
                 </span>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Compartilhe este código com seus amigos
+                  Compartilhe este link com seus amigos
                 </p>
               </div>
               <Button 
-                onClick={copyReferralCode}
+                onClick={copyReferralLink}
                 className="w-full bg-casino-gold hover:bg-casino-gold/80 text-black"
               >
                 <Copy className="h-4 w-4 mr-2" />
-                Copiar Código
+                Copiar Link
               </Button>
             </div>
           </Card>
@@ -229,7 +230,7 @@ const AffiliatesPage = () => {
           <Card className="p-6 bg-casino-header/30 border-border">
             <h3 className="text-white font-bold mb-3">Como Funciona</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p>• Compartilhe seu código de indicação (formato bdc123)</p>
+              <p>• Compartilhe seu link de indicação (ex: https://betdoscrias.app/download?id=bdc123)</p>
               <p>• O indicado usa seu código no cadastro</p>
               <p>• Quando ele depositar R$ 20, você ganha R$ 10</p>
               <p>• O bônus é creditado automaticamente</p>
