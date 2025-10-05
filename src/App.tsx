@@ -27,6 +27,7 @@ import WithdrawalPage from "./pages/WithdrawalPage";
 import AdminPage from "./pages/AdminPage";
 import MenuPage from "./pages/MenuPage";
 import NotFound from "./pages/NotFound";
+import DownloadRedirect from "./pages/DownloadRedirect";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ const App = () => {
             <Route path="/saque" element={<WithdrawalPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/menu" element={<MenuPage />} />
+            <Route path="/download" element={<DownloadRedirect />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

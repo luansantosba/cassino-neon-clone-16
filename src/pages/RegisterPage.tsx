@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -18,6 +18,17 @@ const RegisterPage = () => {
   const [referralCode, setReferralCode] = useState("");
   const [confirmAge, setConfirmAge] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [params] = useSearchParams();
+
+  useEffect(() => {
+    // Prefill referral code from URL (?id=bdc123) or localStorage
+    const urlId = (params.get('id') || '').toLowerCase();
+    const stored = (localStorage.getItem('referrer_id') || '').toLowerCase();
+    const candidate = /^bdc\d{3}$/.test(urlId) ? urlId : (/^bdc\d{3}$/.test(stored) ? stored : '');
+    if (candidate && referralCode !== candidate) {
+      setReferralCode(candidate);
+    }
+  }, [params]);
 
   const validateReferralCode = async (code: string): Promise<boolean> => {
     if (!code) return false;

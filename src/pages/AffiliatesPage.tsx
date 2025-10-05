@@ -229,7 +229,7 @@ const AffiliatesPage = () => {
           <Card className="p-6 bg-casino-header/30 border-border">
             <h3 className="text-white font-bold mb-3">Como Funciona</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p>• Compartilhe seu código de indicação (6 dígitos)</p>
+              <p>• Compartilhe seu código de indicação (formato bdc123)</p>
               <p>• O indicado usa seu código no cadastro</p>
               <p>• Quando ele depositar R$ 20, você ganha R$ 10</p>
               <p>• O bônus é creditado automaticamente</p>

@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.delete-support-ticket]
 verify_jwt = false
+
+[functions.update-withdrawal-status]
+verify_jwt = false

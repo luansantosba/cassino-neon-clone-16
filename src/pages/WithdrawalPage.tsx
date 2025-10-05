@@ -43,8 +43,8 @@ const WithdrawalPage = () => {
     
     const amountValue = parseFloat(amount.replace(",", "."));
     
-    if (!amountValue || amountValue < 100) {
-      toast.error("O valor mínimo de saque é R$ 100,00");
+    if (!amountValue || amountValue < 50) {
+      toast.error("O valor mínimo de saque é R$ 50,00");
       return;
     }
 
@@ -156,7 +156,7 @@ const WithdrawalPage = () => {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Valor mínimo: R$ 100,00
+                  Valor mínimo: R$ 50,00
                 </p>
               </div>
 

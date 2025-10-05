@@ -208,17 +208,11 @@ const WithdrawalsSection = () => {
 
   const handleApprove = async (id: string, amount: number, userId: string) => {
     try {
-      const { error } = await supabase
-        .from('withdrawals')
-        .update({ 
-          status: 'confirmed',
-          processed_at: new Date().toISOString() 
-        })
-        .eq('id', id);
-
-      if (!error) {
-        setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'confirmed' } : w));
-      }
+      const { error } = await supabase.functions.invoke('update-withdrawal-status', {
+        body: { id, action: 'approve' }
+      });
+      if (error as any) throw error;
+      setWithdrawals(prev => prev.filter(w => w.id !== id));
     } catch (error) {
       console.error('Error approving withdrawal:', error);
     }
@@ -226,32 +220,11 @@ const WithdrawalsSection = () => {
 
   const handleReject = async (id: string, amount: number, userId: string) => {
     try {
-      // Update withdrawal status
-      const { error } = await supabase
-        .from('withdrawals')
-        .update({ 
-          status: 'rejected',
-          processed_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      // Refund balance to user
-      if (!error) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('balance')
-          .eq('id', userId)
-          .single();
-
-        if (profile) {
-          await supabase
-            .from('profiles')
-            .update({ balance: profile.balance + amount })
-            .eq('id', userId);
-        }
-
-        setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'rejected' } : w));
-      }
+      const { error } = await supabase.functions.invoke('update-withdrawal-status', {
+        body: { id, action: 'reject', amount, user_id: userId }
+      });
+      if (error as any) throw error;
+      setWithdrawals(prev => prev.filter(w => w.id !== id));
     } catch (error) {
       console.error('Error rejecting withdrawal:', error);
     }

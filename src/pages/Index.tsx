@@ -22,17 +22,15 @@ const Index = () => {
   };
 
   useEffect(() => {
-    // Check for referrer ID in URL parameters
-    const ref = searchParams.get('ref');
-    if (ref) {
-      // Store referrer ID in localStorage for registration
-      localStorage.setItem('referrer_id', ref);
-      toast.success(`Você foi indicado! Use o código ${ref} no cadastro para ganhar bônus!`);
-      
-      // Remove ref parameter from URL to clean up
-      const newUrl = window.location.origin + window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
+    // New referral param: id=bdc###
+    const id = (searchParams.get('id') || '').toLowerCase();
+    if (/^bdc\d{3}$/.test(id)) {
+      localStorage.setItem('referrer_id', id);
+      toast.success(`Você foi indicado! Código ${id} aplicado no cadastro.`);
     }
+    // Clean URL
+    const newUrl = window.location.origin + window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
   }, [searchParams]);
 
   return (
