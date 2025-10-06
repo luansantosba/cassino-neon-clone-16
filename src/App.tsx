@@ -20,7 +20,8 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DepositPage from "./pages/DepositPage";
 import PixPaymentPage from "./pages/PixPaymentPage";
-import AffiliatesPage from "./pages/AffiliatesPage";
+import CouponsPage from "./pages/CouponsPage";
+import AdminCouponsPage from "./pages/AdminCouponsPage";
 import SupportPage from "./pages/SupportPage";
 import HistoryPage from "./pages/HistoryPage";
 import WithdrawalPage from "./pages/WithdrawalPage";
@@ -74,7 +75,8 @@ const App = () => {
             <Route path="/cadastro" element={<RegisterPage />} />
             <Route path="/depositar" element={<DepositPage />} />
             <Route path="/pix-payment" element={<PixPaymentPage />} />
-            <Route path="/afiliados" element={<AffiliatesPage />} />
+            <Route path="/cupons" element={<CouponsPage />} />
+            <Route path="/admin/coupons" element={<AdminCouponsPage />} />
             <Route path="/suporte" element={<SupportPage />} />
             <Route path="/historico" element={<HistoryPage />} />
             <Route path="/saque" element={<WithdrawalPage />} />
