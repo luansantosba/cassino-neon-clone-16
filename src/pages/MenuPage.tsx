@@ -1,4 +1,4 @@
-import { Menu, Ticket, Gift, HeadphonesIcon, History, DollarSign, LogOut } from "lucide-react";
+import { Menu, Users, Gift, HeadphonesIcon, History, DollarSign, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -10,7 +10,7 @@ const MenuPage = () => {
   const menuItems = [
     { icon: History, label: "Histórico", path: "/historico", description: "Veja seu histórico de jogos" },
     { icon: DollarSign, label: "Saque", path: "/saque", description: "Faça suas retiradas" },
-    { icon: Ticket, label: "Cupons", path: "/cupons", description: "Resgatar cupons promocionais" },
+    { icon: Users, label: "Afiliados", path: "/afiliados", description: "Programa de indicação" },
     { icon: Gift, label: "Bônus", path: "/bonus", description: "Seus bônus disponíveis" },
     { icon: HeadphonesIcon, label: "Suporte", path: "/suporte", description: "Central de ajuda" }
   ];

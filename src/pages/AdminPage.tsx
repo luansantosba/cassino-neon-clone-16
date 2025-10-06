@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Menu, X, Users, DollarSign, TrendingUp, ImageIcon, Ticket } from "lucide-react";
+import { Menu, X, Users, DollarSign, TrendingUp, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-type AdminSection = 'users' | 'withdrawals' | 'revenue' | 'banners' | 'cupons' | 'support' | null;
+type AdminSection = 'users' | 'withdrawals' | 'revenue' | 'banners' | 'support' | null;
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -29,7 +29,6 @@ const AdminPage = () => {
     { id: 'withdrawals' as AdminSection, label: 'Saques', icon: DollarSign },
     { id: 'revenue' as AdminSection, label: 'Banca', icon: TrendingUp },
     { id: 'banners' as AdminSection, label: 'Banners', icon: ImageIcon },
-    { id: 'cupons' as AdminSection, label: 'Cupons', icon: Ticket },
     { id: 'support' as AdminSection, label: 'Suporte', icon: Menu }
   ];
 
@@ -48,8 +47,6 @@ const AdminPage = () => {
         return <RevenueSection />;
       case 'banners':
         return <BannersSection />;
-      case 'cupons':
-        return <CouponsSection />;
       case 'support':
         return <SupportRequestsSection />;
       default:
@@ -583,29 +580,6 @@ const SupportRequestsSection = () => {
           ))
         )}
       </div>
-    </Card>
-  );
-};
-
-// Coupons Section Component
-const CouponsSection = () => {
-  const navigate = useNavigate();
-  
-  return (
-    <Card className="p-6 bg-casino-header/30 border-border">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white">Gerenciar Cupons</h2>
-        <Button
-          onClick={() => navigate('/admin/coupons')}
-          className="bg-casino-gold hover:bg-casino-gold/80 text-black"
-        >
-          <Ticket className="h-4 w-4 mr-2" />
-          Abrir Página de Cupons
-        </Button>
-      </div>
-      <p className="text-muted-foreground">
-        Clique no botão acima para criar e gerenciar cupons promocionais.
-      </p>
     </Card>
   );
 };

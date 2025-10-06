@@ -270,6 +270,23 @@ const RegisterPage = () => {
                 />
               </div>
 
+              <div>
+                <label className="text-white text-sm block mb-2">
+                  Código de Indicação (Opcional)
+                </label>
+                <Input
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => handleReferralCodeChange(e.target.value)}
+                  placeholder="bdc123"
+                  className="bg-background border-border text-white text-center tracking-widest text-lg font-mono"
+                  maxLength={6}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Se você foi indicado, digite o código (ex: bdc123)
+                </p>
+              </div>
+
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="age-confirm" 
