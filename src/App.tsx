@@ -28,7 +28,6 @@ import WithdrawalPage from "./pages/WithdrawalPage";
 import AdminPage from "./pages/AdminPage";
 import MenuPage from "./pages/MenuPage";
 import NotFound from "./pages/NotFound";
-import DownloadRedirect from "./pages/DownloadRedirect";
 
 const queryClient = new QueryClient();
 
@@ -75,14 +74,13 @@ const App = () => {
             <Route path="/cadastro" element={<RegisterPage />} />
             <Route path="/depositar" element={<DepositPage />} />
             <Route path="/pix-payment" element={<PixPaymentPage />} />
-            <Route path="/cupons" element={<CouponsPage />} />
-            <Route path="/admin/coupons" element={<AdminCouponsPage />} />
             <Route path="/suporte" element={<SupportPage />} />
             <Route path="/historico" element={<HistoryPage />} />
             <Route path="/saque" element={<WithdrawalPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/menu" element={<MenuPage />} />
-            <Route path="/download" element={<DownloadRedirect />} />
+            <Route path="/cupons" element={<CouponsPage />} />
+            <Route path="/admin/cupons" element={<AdminCouponsPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

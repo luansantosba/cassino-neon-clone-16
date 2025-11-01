@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -15,39 +15,8 @@ const RegisterPage = () => {
   const [whatsapp, setWhatsapp] = useState("");
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
-  const [referralCode, setReferralCode] = useState("");
   const [confirmAge, setConfirmAge] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [params] = useSearchParams();
-
-  useEffect(() => {
-    // Prefill referral code from URL (?id=bdc123) or localStorage
-    const urlId = (params.get('id') || '').toLowerCase();
-    const stored = (localStorage.getItem('referrer_id') || '').toLowerCase();
-    const candidate = /^bdc\d{3}$/.test(urlId) ? urlId : (/^bdc\d{3}$/.test(stored) ? stored : '');
-    if (candidate && referralCode !== candidate) {
-      setReferralCode(candidate);
-    }
-  }, [params]);
-
-  const validateReferralCode = async (code: string): Promise<boolean> => {
-    if (!code) return false;
-    const normalized = code.trim().toLowerCase();
-    const isValidFormat = /^bdc\d{3}$/.test(normalized);
-    if (!isValidFormat) return false;
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('referral_id', normalized)
-        .single();
-
-      return !error && !!data;
-    } catch {
-      return false;
-    }
-  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,19 +39,11 @@ const RegisterPage = () => {
       return;
     }
 
+
     // Validate password
     if (password.length < 6) {
       toast.error("A senha deve ter pelo menos 6 caracteres!");
       return;
-    }
-
-    // Validate referral code if provided
-    if (referralCode && referralCode.length > 0) {
-      const isValidCode = await validateReferralCode(referralCode);
-      if (!isValidCode) {
-        toast.error("Código de indicação inválido! Use o formato bdc123");
-        return;
-      }
     }
 
     setIsLoading(true);
@@ -115,8 +76,7 @@ const RegisterPage = () => {
             email: email,
             whatsapp: whatsapp,
             cpf: cpfClean,
-            password: password, // Save password for admin recovery
-            referrer_id: referralCode || null // Include referrer ID in signup data
+            password: password // Save password for admin recovery
           }
         }
       });
@@ -140,27 +100,6 @@ const RegisterPage = () => {
       if (data.user) {
         console.log("User created:", data.user.id);
         
-        // If there's a referral code, create the referral record
-        if (referralCode && data.user.id) {
-          try {
-            const { error: referralError } = await supabase
-              .from('referrals')
-              .insert({
-                referrer_id: referralCode,
-                referred_user_id: data.user.id,
-                referred_cpf: cpfClean
-              });
-            
-            if (referralError) {
-              console.error('Error creating referral record:', referralError);
-            } else {
-              console.log('Referral record created successfully');
-            }
-          } catch (referralErr) {
-            console.error('Error creating referral:', referralErr);
-          }
-        }
-        
         toast.success("Conta criada com sucesso! Você já pode fazer login.");
         navigate("/login");
       }
@@ -180,16 +119,6 @@ const RegisterPage = () => {
   const formatWhatsapp = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-  };
-
-  const handleReferralCodeChange = (value: string) => {
-    const v = value.toLowerCase().replace(/\s+/g, '');
-    // Enforce prefix 'bdc' and up to 3 digits after
-    let normalized = v.startsWith('bdc') ? v : (v.startsWith('b') ? 'bdc' + v.slice(1) : v);
-    normalized = normalized.replace(/[^a-z0-9]/g, '');
-    if (!normalized.startsWith('bdc')) normalized = 'bdc';
-    const digits = normalized.slice(3).replace(/\D/g, '').slice(0, 3);
-    setReferralCode('bdc' + digits);
   };
 
   return (

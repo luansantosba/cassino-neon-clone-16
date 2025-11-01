@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import CasinoHeader from "@/components/CasinoHeader";
 import CasinoCategories from "@/components/CasinoCategories";
 import PromoBanner from "@/components/PromoBanner";
@@ -9,7 +8,6 @@ import BottomNavigation from "@/components/BottomNavigation";
 
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("raspadinha");
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const handleCategorySelect = (category: string) => {
@@ -21,17 +19,6 @@ const Index = () => {
     }
   };
 
-  useEffect(() => {
-    // New referral param: id=bdc###
-    const id = (searchParams.get('id') || '').toLowerCase();
-    if (/^bdc\d{3}$/.test(id)) {
-      localStorage.setItem('referrer_id', id);
-      toast.success(`Você foi indicado! Código ${id} aplicado no cadastro.`);
-    }
-    // Clean URL
-    const newUrl = window.location.origin + window.location.pathname;
-    window.history.replaceState({}, '', newUrl);
-  }, [searchParams]);
 
   return (
     <div className="min-h-screen bg-background">

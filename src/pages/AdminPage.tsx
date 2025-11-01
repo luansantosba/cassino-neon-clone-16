@@ -596,7 +596,7 @@ const CouponsSection = () => {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white">Gerenciar Cupons</h2>
         <Button
-          onClick={() => navigate('/admin/coupons')}
+          onClick={() => navigate('/admin/cupons')}
           className="bg-casino-gold hover:bg-casino-gold/80 text-black"
         >
           <Ticket className="h-4 w-4 mr-2" />

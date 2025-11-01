@@ -106,6 +106,80 @@ export type Database = {
         }
         Relationships: []
       }
+      coupon_usage: {
+        Row: {
+          coupon_id: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          coupon_id: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          coupon_id?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_usage_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          active: boolean | null
+          bonus_amount: number
+          code: string
+          created_at: string | null
+          game_restriction: string | null
+          id: string
+          minimum_deposit: number | null
+          partner_commission: number | null
+          partner_email: string | null
+          requires_deposit: boolean | null
+          updated_at: string | null
+          valid_until: string
+        }
+        Insert: {
+          active?: boolean | null
+          bonus_amount: number
+          code: string
+          created_at?: string | null
+          game_restriction?: string | null
+          id?: string
+          minimum_deposit?: number | null
+          partner_commission?: number | null
+          partner_email?: string | null
+          requires_deposit?: boolean | null
+          updated_at?: string | null
+          valid_until: string
+        }
+        Update: {
+          active?: boolean | null
+          bonus_amount?: number
+          code?: string
+          created_at?: string | null
+          game_restriction?: string | null
+          id?: string
+          minimum_deposit?: number | null
+          partner_commission?: number | null
+          partner_email?: string | null
+          requires_deposit?: boolean | null
+          updated_at?: string | null
+          valid_until?: string
+        }
+        Relationships: []
+      }
       deposits: {
         Row: {
           amount: number
@@ -351,6 +425,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_coupon_rollover: {
+        Row: {
+          completed: boolean | null
+          coupon_code: string
+          created_at: string | null
+          current_rollover: number | null
+          id: string
+          required_rollover: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          coupon_code: string
+          created_at?: string | null
+          current_rollover?: number | null
+          id?: string
+          required_rollover: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          coupon_code?: string
+          created_at?: string | null
+          current_rollover?: number | null
+          id?: string
+          required_rollover?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_credentials: {
         Row: {
           cpf: string | null
@@ -432,18 +539,21 @@ export type Database = {
         Args: { amount: number; user_id: string }
         Returns: undefined
       }
-      cpf_exists: {
-        Args: { cpf_input: string }
-        Returns: boolean
+      apply_coupon: {
+        Args: {
+          p_coupon_code: string
+          p_deposit_amount?: number
+          p_user_id: string
+        }
+        Returns: Json
       }
-      generate_bdc_referral_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
+      can_use_coupon: {
+        Args: { p_coupon_code: string; p_user_id: string }
+        Returns: Json
       }
-      generate_referral_id: {
-        Args: { cpf_input: string }
-        Returns: string
-      }
+      cpf_exists: { Args: { cpf_input: string }; Returns: boolean }
+      generate_bdc_referral_id: { Args: never; Returns: string }
+      generate_referral_id: { Args: { cpf_input: string }; Returns: string }
       process_referral_bonus: {
         Args: { p_deposit_amount: number; p_referred_user_id: string }
         Returns: undefined

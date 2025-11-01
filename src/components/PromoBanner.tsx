@@ -5,10 +5,6 @@ const PromoBanner = () => {
   const [currentBanner, setCurrentBanner] = useState(0);
   const [banners, setBanners] = useState([
     {
-      src: "/lovable-uploads/banner-afiliados.png",
-      alt: "Indique e ganhe R$10 reais por cada indicação"
-    },
-    {
       src: "/lovable-uploads/banner-sexta.png",
       alt: "Saldo grátis toda SEXTA-FEIRA pra você se divertir"
     }

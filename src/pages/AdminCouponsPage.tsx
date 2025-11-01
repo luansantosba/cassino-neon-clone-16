@@ -234,11 +234,19 @@ const AdminCouponsPage = () => {
 
                 <div>
                   <Label className="text-white">Jogo Específico (opcional)</Label>
-                  <Input
-                    value={gameRestriction}
-                    onChange={(e) => setGameRestriction(e.target.value)}
-                    placeholder="Ex: Fortune Tiger"
-                  />
+                  <Select value={gameRestriction} onValueChange={setGameRestriction}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Qualquer jogo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Qualquer jogo</SelectItem>
+                      <SelectItem value="Raspadinha 1 Real">Raspadinha 1 Real</SelectItem>
+                      <SelectItem value="Raspadinha 5 Reais">Raspadinha 5 Reais</SelectItem>
+                      <SelectItem value="Raspadinha 10 Reais">Raspadinha 10 Reais</SelectItem>
+                      <SelectItem value="Raspadinha 20 Reais">Raspadinha 20 Reais</SelectItem>
+                      <SelectItem value="Double">Double</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
