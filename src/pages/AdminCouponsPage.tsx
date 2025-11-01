@@ -234,12 +234,12 @@ const AdminCouponsPage = () => {
 
                 <div>
                   <Label className="text-white">Jogo Específico (opcional)</Label>
-                  <Select value={gameRestriction} onValueChange={setGameRestriction}>
+                  <Select value={gameRestriction || "todos"} onValueChange={(value) => setGameRestriction(value === "todos" ? "" : value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Qualquer jogo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Qualquer jogo</SelectItem>
+                      <SelectItem value="todos">Qualquer jogo</SelectItem>
                       <SelectItem value="Raspadinha 1 Real">Raspadinha 1 Real</SelectItem>
                       <SelectItem value="Raspadinha 5 Reais">Raspadinha 5 Reais</SelectItem>
                       <SelectItem value="Raspadinha 10 Reais">Raspadinha 10 Reais</SelectItem>
