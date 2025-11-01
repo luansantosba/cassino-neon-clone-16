@@ -1,9 +1,9 @@
-import { Menu, Users, Gift, HeadphonesIcon } from "lucide-react";
+import { Menu, Ticket, Gift, HeadphonesIcon } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const mainNavItems = [
   { icon: Menu, label: "Menu", path: "/menu", active: false },
-  { icon: Users, label: "Afiliados", path: "/afiliados", active: false },
+  { icon: Ticket, label: "Cupons", path: "/cupons", active: false },
   { icon: Gift, label: "Bônus", path: "/bonus", active: false },
   { icon: HeadphonesIcon, label: "Suporte", path: "/suporte", active: false }
 ];

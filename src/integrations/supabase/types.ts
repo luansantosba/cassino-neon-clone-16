@@ -141,6 +141,7 @@ export type Database = {
           bonus_amount: number
           code: string
           created_at: string | null
+          custom_message: string | null
           game_restriction: string | null
           id: string
           minimum_deposit: number | null
@@ -155,6 +156,7 @@ export type Database = {
           bonus_amount: number
           code: string
           created_at?: string | null
+          custom_message?: string | null
           game_restriction?: string | null
           id?: string
           minimum_deposit?: number | null
@@ -169,6 +171,7 @@ export type Database = {
           bonus_amount?: number
           code?: string
           created_at?: string | null
+          custom_message?: string | null
           game_restriction?: string | null
           id?: string
           minimum_deposit?: number | null

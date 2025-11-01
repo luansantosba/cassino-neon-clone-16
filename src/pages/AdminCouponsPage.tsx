@@ -22,6 +22,7 @@ interface Coupon {
   bonus_amount: number;
   active: boolean;
   created_at: string;
+  custom_message: string | null;
 }
 
 const AdminCouponsPage = () => {
@@ -34,11 +35,12 @@ const AdminCouponsPage = () => {
   const [code, setCode] = useState("");
   const [partnerEmail, setPartnerEmail] = useState("");
   const [partnerCommission, setPartnerCommission] = useState("0");
-  const [gameRestriction, setGameRestriction] = useState("");
+  const [gameRestriction, setGameRestriction] = useState("todos");
   const [validityDays, setValidityDays] = useState("1");
   const [minimumDeposit, setMinimumDeposit] = useState("0");
   const [requiresDeposit, setRequiresDeposit] = useState(true);
   const [bonusAmount, setBonusAmount] = useState("");
+  const [customMessage, setCustomMessage] = useState("");
 
   useEffect(() => {
     checkAdminAndLoadCoupons();
@@ -100,12 +102,13 @@ const AdminCouponsPage = () => {
           code: code.toUpperCase(),
           partner_email: partnerEmail || null,
           partner_commission: parseFloat(partnerCommission) || 0,
-          game_restriction: gameRestriction || null,
+          game_restriction: gameRestriction === "todos" ? null : gameRestriction,
           valid_until: validUntil.toISOString(),
           minimum_deposit: parseFloat(minimumDeposit) || 0,
           requires_deposit: requiresDeposit,
           bonus_amount: parseFloat(bonusAmount),
-          active: true
+          active: true,
+          custom_message: customMessage || null
         });
 
       if (error) throw error;
@@ -147,11 +150,12 @@ const AdminCouponsPage = () => {
     setCode("");
     setPartnerEmail("");
     setPartnerCommission("0");
-    setGameRestriction("");
+    setGameRestriction("todos");
     setValidityDays("1");
     setMinimumDeposit("0");
     setRequiresDeposit(true);
     setBonusAmount("");
+    setCustomMessage("");
   };
 
   const getCouponStatus = (coupon: Coupon) => {
@@ -209,6 +213,15 @@ const AdminCouponsPage = () => {
                     value={bonusAmount}
                     onChange={(e) => setBonusAmount(e.target.value)}
                     placeholder="50"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-white">Mensagem Personalizada (opcional)</Label>
+                  <Input
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    placeholder="Parabéns! Você ganhou saldo grátis!"
                   />
                 </div>
 
@@ -334,6 +347,9 @@ const AdminCouponsPage = () => {
                         
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p>Bônus: <span className="text-white font-bold">R$ {coupon.bonus_amount}</span></p>
+                          {coupon.custom_message && (
+                            <p>Mensagem: <span className="text-white">{coupon.custom_message}</span></p>
+                          )}
                           {coupon.partner_email && (
                             <p>Parceiro: {coupon.partner_email} (Comissão: R$ {coupon.partner_commission})</p>
                           )}

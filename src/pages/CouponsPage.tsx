@@ -13,6 +13,7 @@ interface ApplyCouponResponse {
   bonus_amount?: number;
   requires_deposit?: boolean;
   minimum_deposit?: number;
+  game_restriction?: string;
 }
 
 const CouponsPage = () => {
