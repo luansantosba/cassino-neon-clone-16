@@ -13,7 +13,7 @@ interface BonusModalProps {
 const BonusModal = ({ isOpen, onClose, title, message, type = "success" }: BonusModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-casino-header border-casino-gold max-w-md">
+      <DialogContent className="bg-casino-header border-casino-gold w-[92vw] max-w-sm sm:max-w-md rounded-xl">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className={`text-xl font-bold ${
@@ -33,7 +33,7 @@ const BonusModal = ({ isOpen, onClose, title, message, type = "success" }: Bonus
             </Button>
           </div>
         </DialogHeader>
-        <div className="text-white text-center py-4">
+        <div className="text-white text-center py-4 px-1">
           <p className="text-base leading-relaxed whitespace-pre-line">{message}</p>
         </div>
         <Button 

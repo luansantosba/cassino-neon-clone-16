@@ -91,10 +91,18 @@ const CouponsPage = () => {
           setModalOpen(true);
           setCouponCode("");
           
-          // Refresh user balance after modal closes
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000);
+          // Refresh user balance after success
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('balance, bonus_balance')
+              .eq('id', userId)
+              .single();
+            window.dispatchEvent(new CustomEvent('balance-updated', { detail: profile }));
+          } catch (e) {
+            console.error('Erro atualizando saldo após cupom:', e);
+          }
+
         } else {
           setModalData({
             title: "Atenção",

@@ -8,6 +8,7 @@ const CasinoHeader = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userBalance, setUserBalance] = useState(0);
+  const [bonusBalance, setBonusBalance] = useState(0);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -15,15 +16,16 @@ const CasinoHeader = () => {
       setIsLoggedIn(!!user);
       
       if (user) {
-        // Get user profile data including balance
+        // Get user profile data including balances
         const { data: profile } = await supabase
           .from('profiles')
-          .select('balance')
+          .select('balance, bonus_balance')
           .eq('id', user.id)
           .single();
         
         if (profile) {
           setUserBalance(profile.balance || 0);
+          setBonusBalance(profile.bonus_balance || 0);
         }
       }
     };
@@ -35,10 +37,20 @@ const CasinoHeader = () => {
       setIsLoggedIn(!!session);
       if (!session) {
         setUserBalance(0);
+        setBonusBalance(0);
+      } else {
+        checkUser();
       }
     });
+
+    // Listen to manual balance updates
+    const onBalanceUpdated = () => checkUser();
+    window.addEventListener('balance-updated', onBalanceUpdated as EventListener);
     
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('balance-updated', onBalanceUpdated as EventListener);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -72,7 +84,7 @@ const CasinoHeader = () => {
                 size="sm"
                 className="text-white"
               >
-                R$ {userBalance.toFixed(2)}
+                R$ {(userBalance + bonusBalance).toFixed(2)}
               </Button>
             </>
           ) : (

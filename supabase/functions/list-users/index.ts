@@ -29,7 +29,7 @@ serve(async (req) => {
 
     const { data: credentials, error: credError } = await supabaseClient
       .from("user_credentials")
-      .select("user_id, email as credential_email, password, password_hint")
+      .select("user_id, credential_email:email, password, password_hint")
       .in("user_id", userIds);
 
     if (credError) throw credError;
