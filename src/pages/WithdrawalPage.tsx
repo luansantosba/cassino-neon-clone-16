@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { toast } from "sonner";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useBonusCheck, checkWithdrawalEligibility } from "@/hooks/useBonusCheck";
+import BonusModal from "@/components/BonusModal";
 
 const WithdrawalPage = () => {
   const navigate = useNavigate();
@@ -13,6 +14,11 @@ const WithdrawalPage = () => {
   const [userBalance, setUserBalance] = useState(0);
   const [userCpf, setUserCpf] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalData, setModalData] = useState({ title: "", message: "", type: "error" as "success" | "error" | "info" });
+
+  const bonusData = useBonusCheck(userId);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -21,6 +27,8 @@ const WithdrawalPage = () => {
         navigate('/login');
         return;
       }
+      
+      setUserId(user.id);
 
       // Get user profile data
       const { data: profile } = await supabase
@@ -43,13 +51,41 @@ const WithdrawalPage = () => {
     
     const amountValue = parseFloat(amount.replace(",", "."));
     
-    if (!amountValue || amountValue < 50) {
-      toast.error("O valor mínimo de saque é R$ 50,00");
+    if (!amountValue || amountValue < 100) {
+      setModalData({
+        title: "Valor Inválido",
+        message: "O valor mínimo de saque é R$ 100,00",
+        type: "error"
+      });
+      setModalOpen(true);
       return;
     }
 
     if (amountValue > userBalance) {
-      toast.error("Saldo insuficiente");
+      setModalData({
+        title: "Saldo Insuficiente",
+        message: "Você não tem saldo suficiente para este saque",
+        type: "error"
+      });
+      setModalOpen(true);
+      return;
+    }
+
+    // Check rollover eligibility
+    const eligibility = checkWithdrawalEligibility(
+      bonusData.bonusBalance,
+      bonusData.rolloverRequired,
+      bonusData.rolloverCurrent,
+      bonusData.rolloverCompleted
+    );
+
+    if (!eligibility.canWithdraw) {
+      setModalData({
+        title: "Rollover Pendente",
+        message: eligibility.message || "Você precisa completar o rollover antes de sacar",
+        type: "info"
+      });
+      setModalOpen(true);
       return;
     }
 
@@ -58,7 +94,12 @@ const WithdrawalPage = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Usuário não encontrado");
+        setModalData({
+          title: "Erro",
+          message: "Usuário não encontrado",
+          type: "error"
+        });
+        setModalOpen(true);
         return;
       }
 
@@ -74,7 +115,12 @@ const WithdrawalPage = () => {
 
       if (error) {
         console.error('Withdrawal error:', error);
-        toast.error("Erro ao solicitar saque. Tente novamente.");
+        setModalData({
+          title: "Erro",
+          message: "Erro ao solicitar saque. Tente novamente.",
+          type: "error"
+        });
+        setModalOpen(true);
         return;
       }
 
@@ -91,12 +137,25 @@ const WithdrawalPage = () => {
         console.error('Balance update error:', balanceError);
       }
 
-      toast.success("Solicitação de saque enviada com sucesso!");
-      navigate("/historico");
+      setModalData({
+        title: "Sucesso! ✅",
+        message: "Solicitação de saque enviada com sucesso! Aguarde a aprovação.",
+        type: "success"
+      });
+      setModalOpen(true);
+      
+      setTimeout(() => {
+        navigate("/historico");
+      }, 2000);
       
     } catch (error) {
       console.error("Withdrawal error:", error);
-      toast.error("Erro inesperado. Tente novamente.");
+      setModalData({
+        title: "Erro",
+        message: "Erro inesperado. Tente novamente.",
+        type: "error"
+      });
+      setModalOpen(true);
     } finally {
       setIsLoading(false);
     }
@@ -114,8 +173,16 @@ const WithdrawalPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-md mx-auto">
+    <>
+      <BonusModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={modalData.title}
+        message={modalData.message}
+        type={modalData.type}
+      />
+      <div className="min-h-screen bg-background">
+        <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="bg-casino-header/50 border-b border-border p-4 flex items-center justify-between">
           <Button
@@ -155,9 +222,6 @@ const WithdrawalPage = () => {
                     required
                   />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Valor mínimo: R$ 50,00
-                </p>
               </div>
 
               <div>
@@ -185,6 +249,7 @@ const WithdrawalPage = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

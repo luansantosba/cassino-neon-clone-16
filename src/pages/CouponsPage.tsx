@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
 import { X, Ticket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import BonusModal from "@/components/BonusModal";
 
 interface ApplyCouponResponse {
   success: boolean;
@@ -21,6 +21,8 @@ const CouponsPage = () => {
   const [couponCode, setCouponCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalData, setModalData] = useState({ title: "", message: "", type: "success" as "success" | "error" | "info" });
 
   useEffect(() => {
     const checkUser = async () => {
@@ -36,12 +38,22 @@ const CouponsPage = () => {
 
   const handleRedeemCoupon = async () => {
     if (!couponCode.trim()) {
-      toast.error("Por favor, insira um código de cupom");
+      setModalData({
+        title: "Atenção",
+        message: "Por favor, insira um código de cupom",
+        type: "error"
+      });
+      setModalOpen(true);
       return;
     }
 
     if (!userId) {
-      toast.error("Você precisa estar logado para usar cupons");
+      setModalData({
+        title: "Atenção",
+        message: "Você precisa estar logado para usar cupons",
+        type: "error"
+      });
+      setModalOpen(true);
       return;
     }
 
@@ -57,7 +69,12 @@ const CouponsPage = () => {
 
       if (error) {
         console.error('Error applying coupon:', error);
-        toast.error("Erro ao aplicar cupom");
+        setModalData({
+          title: "Erro",
+          message: "Erro ao aplicar cupom. Tente novamente.",
+          type: "error"
+        });
+        setModalOpen(true);
         return;
       }
 
@@ -66,30 +83,58 @@ const CouponsPage = () => {
       
       if (response && typeof response === 'object' && 'success' in response) {
         if (response.success) {
-          toast.success(response.message || "Cupom aplicado com sucesso!");
+          setModalData({
+            title: "Parabéns! 🎉",
+            message: response.message || "Cupom aplicado com sucesso!",
+            type: "success"
+          });
+          setModalOpen(true);
           setCouponCode("");
           
-          // Refresh user balance
+          // Refresh user balance after modal closes
           setTimeout(() => {
             window.location.reload();
-          }, 1500);
+          }, 2000);
         } else {
-          toast.error(response.message || "Erro ao aplicar cupom");
+          setModalData({
+            title: "Atenção",
+            message: response.message || "Erro ao aplicar cupom",
+            type: "error"
+          });
+          setModalOpen(true);
         }
       } else {
-        toast.error("Resposta inesperada do servidor");
+        setModalData({
+          title: "Erro",
+          message: "Resposta inesperada do servidor",
+          type: "error"
+        });
+        setModalOpen(true);
       }
     } catch (error) {
       console.error('Error:', error);
-      toast.error("Erro ao aplicar cupom");
+      setModalData({
+        title: "Erro",
+        message: "Erro ao aplicar cupom",
+        type: "error"
+      });
+      setModalOpen(true);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-md mx-auto">
+    <>
+      <BonusModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={modalData.title}
+        message={modalData.message}
+        type={modalData.type}
+      />
+      <div className="min-h-screen bg-background">
+        <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="bg-casino-header/50 border-b border-border p-4 flex items-center justify-between">
           <Button
@@ -157,6 +202,7 @@ const CouponsPage = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

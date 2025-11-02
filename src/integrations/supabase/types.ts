@@ -275,6 +275,9 @@ export type Database = {
       profiles: {
         Row: {
           balance: number | null
+          bonus_balance: number | null
+          bonus_game_restriction: string | null
+          bonus_locked: boolean | null
           cpf: string | null
           created_at: string | null
           email: string | null
@@ -288,6 +291,9 @@ export type Database = {
         }
         Insert: {
           balance?: number | null
+          bonus_balance?: number | null
+          bonus_game_restriction?: string | null
+          bonus_locked?: boolean | null
           cpf?: string | null
           created_at?: string | null
           email?: string | null
@@ -301,6 +307,9 @@ export type Database = {
         }
         Update: {
           balance?: number | null
+          bonus_balance?: number | null
+          bonus_game_restriction?: string | null
+          bonus_locked?: boolean | null
           cpf?: string | null
           created_at?: string | null
           email?: string | null
@@ -434,6 +443,7 @@ export type Database = {
           coupon_code: string
           created_at: string | null
           current_rollover: number | null
+          game_restriction: string | null
           id: string
           required_rollover: number
           updated_at: string | null
@@ -444,6 +454,7 @@ export type Database = {
           coupon_code: string
           created_at?: string | null
           current_rollover?: number | null
+          game_restriction?: string | null
           id?: string
           required_rollover: number
           updated_at?: string | null
@@ -454,6 +465,7 @@ export type Database = {
           coupon_code?: string
           created_at?: string | null
           current_rollover?: number | null
+          game_restriction?: string | null
           id?: string
           required_rollover?: number
           updated_at?: string | null
@@ -559,6 +571,10 @@ export type Database = {
       generate_referral_id: { Args: { cpf_input: string }; Returns: string }
       process_referral_bonus: {
         Args: { p_deposit_amount: number; p_referred_user_id: string }
+        Returns: undefined
+      }
+      unlock_bonus_after_deposit: {
+        Args: { p_deposit_amount: number; p_user_id: string }
         Returns: undefined
       }
     }
