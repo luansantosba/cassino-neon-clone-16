@@ -52,6 +52,18 @@ serve(async (req) => {
       console.log(`Referral bonus processed for user ${user_id}`);
     }
 
+    // Unlock deposit-required coupon bonus and pay partner commission if applicable
+    const { error: unlockError } = await supabase.rpc('unlock_bonus_after_deposit', {
+      p_user_id: user_id,
+      p_deposit_amount: amount
+    });
+
+    if (unlockError) {
+      console.error('Error unlocking bonus after deposit:', unlockError);
+    } else {
+      console.log(`Checked/unlocked bonus for user ${user_id} after deposit`);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
