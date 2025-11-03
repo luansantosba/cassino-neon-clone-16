@@ -5,8 +5,6 @@ import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import BonusModal from "@/components/BonusModal";
-import { useBonusCheck, checkGameAccess } from "@/hooks/useBonusCheck";
 
 const DoubleGame = () => {
   const navigate = useNavigate();
@@ -23,8 +21,6 @@ const DoubleGame = () => {
   const [timeLeft, setTimeLeft] = useState(15);
   const [isCountdownActive, setIsCountdownActive] = useState(true);
   const [hasBet, setHasBet] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalData, setModalData] = useState({ title: '', message: '', type: 'info' as 'success' | 'error' | 'info' });
 
   // Load user data and balance
   useEffect(() => {
@@ -50,8 +46,6 @@ const DoubleGame = () => {
 
     loadUserData();
   }, [navigate]);
-
-  const bonusData = useBonusCheck(userId);
 
   // Update balance in database
   const updateBalance = async (newBalance: number) => {
@@ -331,102 +325,14 @@ const DoubleGame = () => {
   };
 
 
-  const spinRoulette = async () => {
+  const spinRoulette = () => {
     if (!hasBet || !selectedColor || betAmount <= 0) return;
+    if (betAmount > balance) return;
     
-    const requestedGame = 'Double';
-    const availableBonus = (!bonusData.bonusLocked && (!bonusData.gameRestriction || bonusData.gameRestriction === requestedGame))
-      ? bonusData.bonusBalance
-      : 0;
-    const totalAvailable = balance + availableBonus;
-
-    if (betAmount > totalAvailable) {
-      setIsSpinning(false);
-      setHasBet(false);
-      setModalData({
-        title: 'Saldo Insuficiente',
-        message: 'Seu saldo disponível (incluindo bônus permitido) é insuficiente para esta aposta.',
-        type: 'error'
-      });
-      setModalOpen(true);
-      return;
-    }
-
-    // If needs to use bonus but it's locked or restricted
-    if (betAmount > balance) {
-      if (bonusData.bonusLocked && bonusData.requiresDeposit) {
-        setIsSpinning(false);
-        setHasBet(false);
-        setModalData({
-          title: 'Bônus Bloqueado',
-          message: `Você ganhou saldo bônus, mas ele está bloqueado. Realize um depósito de R$ ${Number(bonusData.minimumDeposit || 0).toFixed(2)} para liberar o uso do bônus.`,
-          type: 'info'
-        });
-        setModalOpen(true);
-        return;
-      }
-      if (bonusData.gameRestriction && bonusData.gameRestriction !== requestedGame) {
-        setIsSpinning(false);
-        setHasBet(false);
-        setModalData({
-          title: 'Bônus Restrito',
-          message: `Este saldo bônus só pode ser usado no jogo ${bonusData.gameRestriction}.`,
-          type: 'info'
-        });
-        setModalOpen(true);
-        return;
-      }
-    }
-
-    // Deduct considering bonus first
-    try {
-      let remaining = betAmount;
-      let usedFromBonus = Math.min(availableBonus, remaining);
-
-      if (usedFromBonus > 0 && userId) {
-        // Update bonus balance
-        await supabase
-          .from('profiles')
-          .update({ bonus_balance: Math.max(0, (bonusData.bonusBalance - usedFromBonus)) })
-          .eq('id', userId);
-
-        // Update rollover progress on latest active coupon
-        const { data: roll } = await supabase
-          .from('user_coupon_rollover' as any)
-          .select('id, required_rollover, current_rollover')
-          .eq('user_id', userId)
-          .eq('completed', false)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (roll) {
-          const newCurrent = (roll.current_rollover || 0) + usedFromBonus;
-          const completed = newCurrent >= (roll.required_rollover || 0);
-          await supabase
-            .from('user_coupon_rollover' as any)
-            .update({ current_rollover: newCurrent, completed })
-            .eq('id', roll.id);
-        }
-
-        remaining -= usedFromBonus;
-      }
-
-      if (remaining > 0) {
-        const newBalance = balance - remaining;
-        await updateBalance(newBalance);
-      }
-
-      // Notify UI listeners
-      window.dispatchEvent(new CustomEvent('balance-updated'));
-    } catch (e) {
-      console.error('Erro ao debitar aposta:', e);
-      setIsSpinning(false);
-      setHasBet(false);
-      setModalData({ title: 'Erro', message: 'Não foi possível processar sua aposta.', type: 'error' });
-      setModalOpen(true);
-      return;
-    }
-
+    // Deduct balance when spinning starts
+    const newBalance = balance - betAmount;
+    updateBalance(newBalance);
+    
     // Generate RNG result based on manipulation (80% house edge)
     const result = generateRNGResult(selectedColor);
     targetNumber.current = result;
@@ -450,13 +356,14 @@ const DoubleGame = () => {
     animationRef.current = requestAnimationFrame(animateRoulette);
   };
 
-  const placeBet = async () => {
+  const placeBet = () => {
     if (!selectedColor || betAmount <= 0) return;
+    if (betAmount > balance) return;
     if (isSpinning) return; // Prevent double-click
     
     setHasBet(true);
     setSavedBetAmount(betAmount);
-    await spinRoulette();
+    spinRoulette();
   };
 
   const getColorName = (color: string) => {
@@ -473,13 +380,6 @@ const DoubleGame = () => {
 
   return (
     <div className="min-h-screen bg-double-bg text-white">
-      <BonusModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={modalData.title}
-        message={modalData.message}
-        type={modalData.type}
-      />
       {/* Header */}
       <div className="bg-double-card p-4 flex items-center justify-between">
         <Button
@@ -492,7 +392,7 @@ const DoubleGame = () => {
         </Button>
         <div className="flex-1"></div>
         <div className="text-lg font-semibold">
-          R$ {(balance + bonusData.bonusBalance).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          R$ {balance.toLocaleString('pt-BR')}
         </div>
       </div>
 

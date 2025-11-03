@@ -6,8 +6,6 @@ import { toast } from "sonner";
 import { Menu, X, Info } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import BonusModal from "@/components/BonusModal";
-import { useBonusCheck } from "@/hooks/useBonusCheck";
 
 const PRIZES = {
   "perdeu": { 
@@ -47,8 +45,6 @@ const ScratchCard5to2500 = () => {
   const [actualGameNumber, setActualGameNumber] = useState(1);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [currentCartela, setCurrentCartela] = useState(0);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalData, setModalData] = useState({ title: '', message: '', type: 'info' as 'success' | 'error' | 'info' });
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const getPrizeForCard = (cardNumber: number): string => {
@@ -115,73 +111,26 @@ const ScratchCard5to2500 = () => {
     }, 100);
   };
 
-  const buyCard = async () => {
-    const price = 5;
-    const requestedGame = 'Raspadinha 5 Reais';
-
-    const availableBonus = (!bonusData.bonusLocked && (!bonusData.gameRestriction || bonusData.gameRestriction === requestedGame))
-      ? bonusData.bonusBalance
-      : 0;
-
-    const totalAvailable = balance + availableBonus;
-
-    if (price > totalAvailable) {
-      setModalData({ title: 'Saldo Insuficiente', message: 'Seu saldo disponível é insuficiente para comprar esta cartela.', type: 'error' });
-      setModalOpen(true);
+  const buyCard = () => {
+    if (balance < 5) {
+      toast.error("Saldo insuficiente!", {
+        position: "top-center",
+      });
       return;
     }
-
-    if (price > balance) {
-      if (bonusData.bonusLocked && bonusData.requiresDeposit) {
-        setModalData({ title: 'Bônus Bloqueado', message: `Deposite R$ ${Number(bonusData.minimumDeposit || 0).toFixed(2)} para liberar o uso do bônus.`, type: 'info' });
-        setModalOpen(true);
-        return;
-      }
-      if (bonusData.gameRestriction && bonusData.gameRestriction !== requestedGame) {
-        setModalData({ title: 'Bônus Restrito', message: `Seu bônus só pode ser usado no jogo ${bonusData.gameRestriction}.`, type: 'info' });
-        setModalOpen(true);
-        return;
-      }
-    }
-
-    try {
-      let remaining = price;
-      const useFromBonus = Math.min(availableBonus, remaining);
-      if (useFromBonus > 0 && userId) {
-        await supabase.from('profiles').update({ bonus_balance: Math.max(0, (bonusData.bonusBalance - useFromBonus)) }).eq('id', userId);
-        const { data: roll } = await supabase
-          .from('user_coupon_rollover' as any)
-          .select('id, required_rollover, current_rollover')
-          .eq('user_id', userId)
-          .eq('completed', false)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (roll) {
-          const newCurrent = (roll.current_rollover || 0) + useFromBonus;
-          const completed = newCurrent >= (roll.required_rollover || 0);
-          await supabase.from('user_coupon_rollover' as any).update({ current_rollover: newCurrent, completed }).eq('id', roll.id);
-        }
-        remaining -= useFromBonus;
-      }
-      if (remaining > 0) {
-        const newBalance = balance - remaining;
-        await updateBalance(newBalance);
-      }
-      window.dispatchEvent(new CustomEvent('balance-updated'));
-    } catch (e) {
-      console.error('Erro ao comprar cartela:', e);
-      toast.error('Erro ao comprar cartela');
-      return;
-    }
-
+    
+    const newBalance = balance - 5;
+    updateBalance(newBalance);
+    
     const currentCard = gameNumber;
     setCurrentCartela(currentCard);
     generateCard(currentCard);
     setGameNumber(prev => (prev % 50) + 1);
     setActualGameNumber(prev => prev + 1);
-    setLastResult("");
-    toast.success("Nova cartela comprada!", { position: "top-center" });
+    setLastResult(""); // Clear previous result when buying new card
+    toast.success("Nova cartela comprada!", {
+      position: "top-center",
+    });
   };
 
   const revealAll = () => {
@@ -290,8 +239,6 @@ const ScratchCard5to2500 = () => {
     load();
   }, [navigate]);
 
-  const bonusData = useBonusCheck(userId);
-
   const currentPrize = prizeKey ? PRIZES[prizeKey as keyof typeof PRIZES] : PRIZES["perdeu"];
 
   const handleExit = () => {
@@ -399,7 +346,7 @@ const ScratchCard5to2500 = () => {
               Comprar cartela
             </Button>
             <div className="flex-1 flex items-center justify-center bg-casino-header/50 border border-white/20 rounded-lg px-3 py-2">
-              <span className="text-white font-bold">R$ {(balance + bonusData.bonusBalance).toFixed(2)}</span>
+              <span className="text-white font-bold">R$ {balance.toFixed(2)}</span>
             </div>
           </div>
 
@@ -424,7 +371,6 @@ const ScratchCard5to2500 = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        <BonusModal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={modalData.title} message={modalData.message} type={modalData.type} />
       </div>
     </div>
   );

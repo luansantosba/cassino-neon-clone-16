@@ -8,9 +8,6 @@ interface BonusData {
   rolloverRequired: number;
   rolloverCurrent: number;
   rolloverCompleted: boolean;
-  requiresDeposit?: boolean;
-  minimumDeposit?: number | null;
-  couponCode?: string | null;
 }
 
 export const useBonusCheck = (userId: string | null) => {
@@ -35,46 +32,25 @@ export const useBonusCheck = (userId: string | null) => {
           .eq('id', userId)
           .single();
 
-        // Get rollover data (latest incomplete)
+        // Get rollover data
         const { data: rollover } = await supabase
           .from('user_coupon_rollover' as any)
-          .select('required_rollover, current_rollover, completed, game_restriction, coupon_code, created_at')
+          .select('required_rollover, current_rollover, completed, game_restriction')
           .eq('user_id', userId)
           .eq('completed', false)
           .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        // If we have a coupon code, fetch its deposit requirements
-        let requiresDeposit: boolean | undefined = undefined;
-        let minimumDeposit: number | null | undefined = undefined;
-        let couponCode: string | null | undefined = undefined;
-
-        const rolloverData = rollover as any;
-        if (rolloverData?.coupon_code) {
-          couponCode = rolloverData.coupon_code as string;
-          const { data: couponInfo } = await supabase
-            .from('coupons' as any)
-            .select('requires_deposit, minimum_deposit')
-            .eq('code', rolloverData.coupon_code)
-            .maybeSingle();
-          if (couponInfo) {
-            requiresDeposit = !!(couponInfo as any).requires_deposit;
-            minimumDeposit = (couponInfo as any).minimum_deposit ?? null;
-          }
-        }
-
         if (profile) {
+          const rolloverData = rollover as any;
           setBonusData({
             bonusBalance: profile.bonus_balance || 0,
             bonusLocked: profile.bonus_locked || false,
             gameRestriction: profile.bonus_game_restriction || rolloverData?.game_restriction || null,
             rolloverRequired: rolloverData?.required_rollover || 0,
             rolloverCurrent: rolloverData?.current_rollover || 0,
-            rolloverCompleted: rolloverData?.completed || false,
-            requiresDeposit,
-            minimumDeposit,
-            couponCode: couponCode ?? null
+            rolloverCompleted: rolloverData?.completed || false
           });
         }
       } catch (error) {
