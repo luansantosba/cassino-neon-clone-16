@@ -54,52 +54,19 @@ serve(async (req) => {
 
       console.log('Deposit updated:', updatedDeposit)
       
-      // Idempotency check: avoid double-crediting
-      const { data: alreadyProcessed } = await supabase
-        .from('deposit_processing_log')
-        .select('deposit_id')
-        .eq('deposit_id', updatedDeposit.id)
-        .maybeSingle();
-
-      if (alreadyProcessed) {
-        console.log('Deposit already processed, skipping credit:', updatedDeposit.id);
-      } else {
-        // Credit balance directly and handle bonuses/commissions
-        const { error: balanceError } = await supabase.rpc('add_balance', {
+      // Process deposit and referral bonus using edge function
+      const { error: processError } = await supabase.functions.invoke('process-deposit', {
+        body: {
           user_id: updatedDeposit.user_id,
           amount: updatedDeposit.amount
-        });
-        if (balanceError) {
-          console.error('Error adding balance:', balanceError);
-        } else {
-          console.log(`Balance credited for user ${updatedDeposit.user_id}: R$ ${updatedDeposit.amount}`);
         }
+      });
 
-        // Referral bonus (accumulated deposits >= 20)
-        const { error: bonusError } = await supabase.rpc('process_referral_bonus', {
-          p_referred_user_id: updatedDeposit.user_id,
-          p_deposit_amount: updatedDeposit.amount
-        });
-        if (bonusError) {
-          console.error('Error processing referral bonus:', bonusError);
-        }
-
-        // Unlock deposit-required coupon bonus and pay partner commission if applicable
-        const { error: unlockError } = await supabase.rpc('unlock_bonus_after_deposit', {
-          p_user_id: updatedDeposit.user_id,
-          p_deposit_amount: updatedDeposit.amount
-        });
-        if (unlockError) {
-          console.error('Error unlocking bonus after deposit:', unlockError);
-        }
-
-        // Mark processed for idempotency
-        const { error: logError } = await supabase
-          .from('deposit_processing_log')
-          .insert({ deposit_id: updatedDeposit.id });
-        if (logError) {
-          console.error('Error logging processed deposit:', logError);
-        }
+      if (processError) {
+        console.error('Error processing deposit:', processError);
+        // Still return success as the deposit was confirmed, bonus is secondary
+      } else {
+        console.log(`Deposit and bonus processed for user ${updatedDeposit.user_id}: R$ ${updatedDeposit.amount}`);
       }
     } else if (webhookData.status === 'cancelled' || webhookData.status === 'expired') {
       console.log(`Processing payment cancellation for transaction: ${webhookData.transaction_id}`)

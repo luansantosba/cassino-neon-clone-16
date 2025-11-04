@@ -104,34 +104,22 @@ export const useBonusCheck = (userId: string | null) => {
 export const checkGameAccess = (
   requestedGame: string,
   gameRestriction: string | null,
-  bonusBalance: number,
-  opts?: { bonusLocked?: boolean }
+  bonusBalance: number
 ): { canPlay: boolean; message?: string } => {
-  const normalizedReq = (requestedGame || '').trim().toLowerCase();
-  const normalizedRestr = (gameRestriction || '').trim().toLowerCase();
-
   // If no bonus balance or no restriction, can play
-  if (bonusBalance <= 0 || !normalizedRestr) {
+  if (bonusBalance <= 0 || !gameRestriction) {
     return { canPlay: true };
   }
 
-  // If bonus is locked (awaiting deposit), block with message
-  if (opts?.bonusLocked) {
-    return {
-      canPlay: false,
-      message: 'Você possui um bônus bloqueado que exige um depósito para liberar o uso. Faça um depósito para liberar o bônus.'
-    };
-  }
-
-  // If game matches restriction (case-insensitive), can play
-  if (normalizedRestr === normalizedReq) {
+  // If game matches restriction, can play
+  if (gameRestriction === requestedGame) {
     return { canPlay: true };
   }
 
-  // Otherwise, blocked on other games
+  // Otherwise, blocked
   return {
     canPlay: false,
-    message: `Este saldo bônus é específico para o jogo ${gameRestriction}. Entre no jogo ${gameRestriction} para usar o bônus.`
+    message: `Este saldo bônus só pode ser usado no jogo ${gameRestriction}. Jogue ${gameRestriction} para usar seu bônus!`
   };
 };
 

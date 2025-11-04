@@ -20,13 +20,3 @@ verify_jwt = false
 
 [functions.update-withdrawal-status]
 verify_jwt = false
-
-# Public webhook and processing endpoints
-[functions.buss-webhook]
-verify_jwt = false
-
-[functions.process-deposit]
-verify_jwt = false
-
-[functions.reprocess-confirmed-deposits]
-verify_jwt = false
