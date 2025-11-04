@@ -183,6 +183,21 @@ export type Database = {
         }
         Relationships: []
       }
+      deposit_processing_log: {
+        Row: {
+          deposit_id: string
+          processed_at: string
+        }
+        Insert: {
+          deposit_id: string
+          processed_at?: string
+        }
+        Update: {
+          deposit_id?: string
+          processed_at?: string
+        }
+        Relationships: []
+      }
       deposits: {
         Row: {
           amount: number
