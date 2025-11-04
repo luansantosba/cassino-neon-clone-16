@@ -141,8 +141,8 @@ const DoubleGame = () => {
 
   // RNG - Random Number Generator with house edge manipulation
   const generateRNGResult = (playerBetColor: string) => {
-    // House edge: 83% house wins, 17% player wins
-    const shouldPlayerWin = Math.random() < 0.17;
+    // House edge: 82% house wins, 18% player wins
+    const shouldPlayerWin = Math.random() < 0.18;
     
     console.log(`RNG - Player bet: ${playerBetColor}, Should win: ${shouldPlayerWin}`);
     
@@ -400,12 +400,13 @@ const DoubleGame = () => {
           .limit(1)
           .maybeSingle();
         if (roll) {
-          const newCurrent = (roll.current_rollover || 0) + usedFromBonus;
-          const completed = newCurrent >= (roll.required_rollover || 0);
+          const rollData = roll as any;
+          const newCurrent = (rollData.current_rollover || 0) + usedFromBonus;
+          const completed = newCurrent >= (rollData.required_rollover || 0);
           await supabase
             .from('user_coupon_rollover' as any)
             .update({ current_rollover: newCurrent, completed })
-            .eq('id', roll.id);
+            .eq('id', rollData.id);
         }
 
         remaining -= usedFromBonus;

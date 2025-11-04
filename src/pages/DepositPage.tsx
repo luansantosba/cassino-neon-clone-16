@@ -119,8 +119,8 @@ const DepositPage = () => {
   const generatePix = async (): Promise<boolean> => {
     const amountValue = parseFloat(amount.replace(",", "."));
     
-    if (!amountValue || amountValue < 7) {
-      toast.error("O valor mínimo é R$ 7,00");
+    if (!amountValue || amountValue < 10) {
+      toast.error("O valor mínimo é R$ 10,00");
       return false;
     }
 
@@ -228,7 +228,7 @@ const DepositPage = () => {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Valor mínimo: R$ 7,00 | Valor máximo: R$ 5.000,00
+                  Valor mínimo: R$ 10,00 | Valor máximo: R$ 5.000,00
                 </p>
               </div>
 

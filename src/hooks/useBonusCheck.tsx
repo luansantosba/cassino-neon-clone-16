@@ -129,17 +129,20 @@ export const checkWithdrawalEligibility = (
   rolloverCurrent: number,
   rolloverCompleted: boolean
 ): { canWithdraw: boolean; message?: string } => {
-  // If no bonus balance, can withdraw
-  if (bonusBalance <= 0 || rolloverCompleted) {
+  // Apenas saldo de bônus de cupons tem rollover
+  // Comissões de indicação e depósitos normais podem ser sacados livremente
+  
+  // Se não há bônus de cupom ativo (rolloverRequired = 0), pode sacar
+  if (rolloverRequired <= 0 || rolloverCompleted) {
     return { canWithdraw: true };
   }
 
-  // If rollover not completed, blocked
+  // Se tem rollover pendente de cupom, verificar
   if (rolloverCurrent < rolloverRequired) {
     const remaining = rolloverRequired - rolloverCurrent;
     return {
       canWithdraw: false,
-      message: `Você precisa completar o rollover de 1x do bônus antes de sacar.\n\nApostado: R$ ${rolloverCurrent.toFixed(2)}\nNecessário: R$ ${rolloverRequired.toFixed(2)}\nFaltam: R$ ${remaining.toFixed(2)}`
+      message: `Você precisa completar o rollover de 1x do bônus de cupom antes de sacar.\n\nApostado: R$ ${rolloverCurrent.toFixed(2)}\nNecessário: R$ ${rolloverRequired.toFixed(2)}\nFaltam: R$ ${remaining.toFixed(2)}`
     };
   }
 

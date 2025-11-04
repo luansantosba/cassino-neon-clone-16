@@ -171,24 +171,25 @@ const ScratchCard = () => {
     try {
       let remaining = price;
       const useFromBonus = Math.min(availableBonus, remaining);
-      if (useFromBonus > 0 && userId) {
-        await supabase.from('profiles').update({ bonus_balance: Math.max(0, (bonusData.bonusBalance - useFromBonus)) }).eq('id', userId);
-        // Update rollover
-        const { data: roll } = await supabase
-          .from('user_coupon_rollover' as any)
-          .select('id, required_rollover, current_rollover')
-          .eq('user_id', userId)
-          .eq('completed', false)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (roll) {
-          const newCurrent = (roll.current_rollover || 0) + useFromBonus;
-          const completed = newCurrent >= (roll.required_rollover || 0);
-          await supabase.from('user_coupon_rollover' as any).update({ current_rollover: newCurrent, completed }).eq('id', roll.id);
+        if (useFromBonus > 0 && userId) {
+          await supabase.from('profiles').update({ bonus_balance: Math.max(0, (bonusData.bonusBalance - useFromBonus)) }).eq('id', userId);
+          // Update rollover
+          const { data: roll } = await supabase
+            .from('user_coupon_rollover' as any)
+            .select('id, required_rollover, current_rollover')
+            .eq('user_id', userId)
+            .eq('completed', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (roll) {
+            const rollData = roll as any;
+            const newCurrent = (rollData.current_rollover || 0) + useFromBonus;
+            const completed = newCurrent >= (rollData.required_rollover || 0);
+            await supabase.from('user_coupon_rollover' as any).update({ current_rollover: newCurrent, completed }).eq('id', rollData.id);
+          }
+          remaining -= useFromBonus;
         }
-        remaining -= useFromBonus;
-      }
       if (remaining > 0) {
         const newBalance = balance - remaining;
         await updateBalance(newBalance);
