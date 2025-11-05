@@ -117,9 +117,13 @@ const ScratchCard10to15000 = () => {
     const price = 10;
     const requestedGame = 'Raspadinha 10 Reais';
 
-    const availableBonus = (!bonusData.bonusLocked && (!bonusData.gameRestriction || bonusData.gameRestriction === requestedGame))
-      ? bonusData.bonusBalance
-      : 0;
+    const normalize = (s: string) => s.trim().toLowerCase();
+    const canUseBonusHere = !bonusData.bonusLocked && (
+      !bonusData.gameRestriction ||
+      ['qualquer', 'qualquer jogo', 'any', 'todos', 'todas', 'all'].includes(normalize(bonusData.gameRestriction)) ||
+      normalize(bonusData.gameRestriction) === normalize(requestedGame)
+    );
+    const availableBonus = canUseBonusHere ? bonusData.bonusBalance : 0;
 
     const totalAvailable = balance + availableBonus;
 

@@ -141,18 +141,19 @@ const DoubleGame = () => {
 
   // RNG - Random Number Generator with house edge manipulation
   const generateRNGResult = (playerBetColor: string) => {
-    // House edge: 82% house wins, 18% player wins
-    const shouldPlayerWin = Math.random() < 0.18;
-    
+    // NUNCA pagar branco: se apostar em branco, sempre força derrota
+    if (playerBetColor === 'white') {
+      const losingNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+      return losingNumbers[Math.floor(Math.random() * losingNumbers.length)];
+    }
+
+    // House edge: 77% casa ganha, 23% jogador ganha
+    const shouldPlayerWin = Math.random() < 0.23;
     console.log(`RNG - Player bet: ${playerBetColor}, Should win: ${shouldPlayerWin}`);
-    
+
     if (shouldPlayerWin) {
-      // Player wins - give winning number for their color (NEVER white wins)
-      if (playerBetColor === 'white') {
-        // White NEVER wins - force loss
-        const losingNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
-        return losingNumbers[Math.floor(Math.random() * losingNumbers.length)];
-      } else if (playerBetColor === 'red') {
+      // Jogador vence - retorna número da cor escolhida (nunca branco)
+      if (playerBetColor === 'red') {
         const redNumbers = [1, 3, 5, 7, 9, 11, 13];
         return redNumbers[Math.floor(Math.random() * redNumbers.length)];
       } else if (playerBetColor === 'black') {
@@ -160,23 +161,17 @@ const DoubleGame = () => {
         return blackNumbers[Math.floor(Math.random() * blackNumbers.length)];
       }
     } else {
-      // Player loses - give opposite/losing color
-      if (playerBetColor === 'white') {
-        // White never wins - always loses
-        const losingNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
-        return losingNumbers[Math.floor(Math.random() * losingNumbers.length)];
-      } else if (playerBetColor === 'red') {
-        // Red loses - give black or white
+      // Jogador perde - dá cor oposta (ou branco)
+      if (playerBetColor === 'red') {
         const losingNumbers = [0, 2, 4, 6, 8, 10, 12, 14];
         return losingNumbers[Math.floor(Math.random() * losingNumbers.length)];
       } else if (playerBetColor === 'black') {
-        // Black loses - give red or white
         const losingNumbers = [0, 1, 3, 5, 7, 9, 11, 13];
         return losingNumbers[Math.floor(Math.random() * losingNumbers.length)];
       }
     }
-    
-    // Fallback - random number 0-14
+
+    // Fallback - aleatório 0-14
     return Math.floor(Math.random() * 15);
   };
 
@@ -335,9 +330,13 @@ const DoubleGame = () => {
     if (!hasBet || !selectedColor || betAmount <= 0) return;
     
     const requestedGame = 'Double';
-    const availableBonus = (!bonusData.bonusLocked && (!bonusData.gameRestriction || bonusData.gameRestriction === requestedGame))
-      ? bonusData.bonusBalance
-      : 0;
+    const normalize = (s: string) => s.trim().toLowerCase();
+    const canUseBonusHere = !bonusData.bonusLocked && (
+      !bonusData.gameRestriction ||
+      ['qualquer', 'qualquer jogo', 'any', 'todos', 'todas', 'all'].includes(normalize(bonusData.gameRestriction)) ||
+      normalize(bonusData.gameRestriction) === normalize(requestedGame)
+    );
+    const availableBonus = canUseBonusHere ? bonusData.bonusBalance : 0;
     const totalAvailable = balance + availableBonus;
 
     if (betAmount > totalAvailable) {
@@ -598,17 +597,20 @@ const DoubleGame = () => {
           </div>
           <Button
             onClick={placeBet}
-            disabled={!selectedColor || betAmount <= 0 || betAmount > balance || isSpinning}
+            disabled={
+              !selectedColor ||
+              betAmount <= 0 ||
+              betAmount > (balance + (!bonusData.bonusLocked && (
+                !bonusData.gameRestriction ||
+                ['qualquer','qualquer jogo','any','todos','todas','all'].includes((bonusData.gameRestriction || '').toLowerCase()) ||
+                (bonusData.gameRestriction && bonusData.gameRestriction.toLowerCase() === 'double')
+              ) ? bonusData.bonusBalance : 0)) ||
+              isSpinning
+            }
             className="flex-[2] h-14 text-lg font-bold bg-green-400 hover:bg-green-500 text-white disabled:opacity-50"
           >
             {isSpinning ? 'GIRANDO...' : 'APOSTAR'}
           </Button>
-        </div>
-        {betAmount > balance && betAmount > 0 && (
-          <div className="text-red-400 text-sm mt-2 text-center">
-            Saldo insuficiente
-          </div>
-        )}
       </div>
 
       {/* Player History */}

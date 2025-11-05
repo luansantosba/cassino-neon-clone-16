@@ -106,17 +106,22 @@ export const checkGameAccess = (
   gameRestriction: string | null,
   bonusBalance: number
 ): { canPlay: boolean; message?: string } => {
-  // If no bonus balance or no restriction, can play
+  // Se não há saldo bônus ou não há restrição, pode jogar em qualquer jogo
   if (bonusBalance <= 0 || !gameRestriction) {
     return { canPlay: true };
   }
 
-  // If game matches restriction, can play
-  if (gameRestriction === requestedGame) {
+  const normalize = (s: string) => s.trim().toLowerCase();
+  const restriction = normalize(gameRestriction);
+  const requested = normalize(requestedGame);
+  const anyValues = ['qualquer', 'qualquer jogo', 'any', 'todos', 'todas', 'all'];
+
+  // Se restrição for "qualquer" ou corresponder ao jogo solicitado, permite jogar
+  if (anyValues.includes(restriction) || restriction === requested) {
     return { canPlay: true };
   }
 
-  // Otherwise, blocked
+  // Caso contrário, bloqueia
   return {
     canPlay: false,
     message: `Este saldo bônus só pode ser usado no jogo ${gameRestriction}. Jogue ${gameRestriction} para usar seu bônus!`

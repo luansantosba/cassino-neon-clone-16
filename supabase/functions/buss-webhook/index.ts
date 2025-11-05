@@ -54,19 +54,37 @@ serve(async (req) => {
 
       console.log('Deposit updated:', updatedDeposit)
       
-      // Process deposit and referral bonus using edge function
-      const { error: processError } = await supabase.functions.invoke('process-deposit', {
-        body: {
-          user_id: updatedDeposit.user_id,
-          amount: updatedDeposit.amount
-        }
-      });
-
-      if (processError) {
-        console.error('Error processing deposit:', processError);
-        // Still return success as the deposit was confirmed, bonus is secondary
+      // Idempotência: evitar crédito duplicado
+      const { data: alreadyProcessed } = await supabase
+        .from('deposit_processing_log' as any)
+        .select('deposit_id')
+        .eq('deposit_id', updatedDeposit.id)
+        .maybeSingle();
+      
+      if (alreadyProcessed) {
+        console.log('Deposit already processed, skipping credit:', updatedDeposit.id)
       } else {
-        console.log(`Deposit and bonus processed for user ${updatedDeposit.user_id}: R$ ${updatedDeposit.amount}`);
+        // Process deposit and referral bonus using edge function
+        const { error: processError } = await supabase.functions.invoke('process-deposit', {
+          body: {
+            user_id: updatedDeposit.user_id,
+            amount: updatedDeposit.amount
+          }
+        });
+
+        if (processError) {
+          console.error('Error processing deposit:', processError);
+          // Still return success as the deposit was confirmed, bonus is secondary
+        } else {
+          console.log(`Deposit and bonus processed for user ${updatedDeposit.user_id}: R$ ${updatedDeposit.amount}`);
+          // Mark as processed
+          const { error: logError } = await supabase
+            .from('deposit_processing_log' as any)
+            .insert({ deposit_id: updatedDeposit.id });
+          if (logError) {
+            console.error('Error logging deposit processing:', logError);
+          }
+        }
       }
     } else if (webhookData.status === 'cancelled' || webhookData.status === 'expired') {
       console.log(`Processing payment cancellation for transaction: ${webhookData.transaction_id}`)
