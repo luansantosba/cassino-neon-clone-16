@@ -23,15 +23,28 @@ serve(async (req) => {
     console.log('Reprocess deposits start', { targetEmails });
 
     // Find confirmed deposits not yet processed
+    // Optionally filter by emails -> resolve to user_ids first
+    let userIdsFilter: string[] | undefined = undefined;
+    if (targetEmails && targetEmails.length > 0) {
+      const { data: profilesByEmail, error: profErr } = await supabase
+        .from('profiles' as any)
+        .select('id, email')
+        .in('email' as any, targetEmails as any);
+      if (profErr) {
+        console.error('Error fetching profiles by email:', profErr);
+        return new Response(JSON.stringify({ error: 'profiles_fetch_error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      userIdsFilter = (profilesByEmail || []).map((p: any) => p.id);
+    }
+
     let depositsQuery = supabase
       .from('deposits' as any)
-      .select('id, user_id, amount, status, transaction_id, confirmed_at, profiles:profiles!deposits_user_id_fkey(email)')
+      .select('id, user_id, amount, status, transaction_id, confirmed_at')
       .eq('status', 'confirmed')
       .order('confirmed_at', { ascending: true });
 
-    if (targetEmails && targetEmails.length > 0) {
-      // Filter by user email list
-      depositsQuery = depositsQuery.in('profiles.email' as any, targetEmails as any);
+    if (userIdsFilter && userIdsFilter.length > 0) {
+      depositsQuery = depositsQuery.in('user_id' as any, userIdsFilter as any);
     }
 
     const { data: confirmedDeposits, error: depErr } = await depositsQuery;
