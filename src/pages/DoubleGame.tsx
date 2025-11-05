@@ -611,6 +611,7 @@ const DoubleGame = () => {
           >
             {isSpinning ? 'GIRANDO...' : 'APOSTAR'}
           </Button>
+        </div>
       </div>
 
       {/* Player History */}
