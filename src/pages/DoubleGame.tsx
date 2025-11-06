@@ -659,6 +659,48 @@ const DoubleGame = () => {
           )}
         </div>
       </div>
+
+      <Dialog open={showDepositModal} onOpenChange={(open) => {
+        if (!open) {
+          navigate('/');
+        }
+        setShowDepositModal(open);
+      }}>
+        <DialogContent className="bg-casino-header border-casino-gold w-[92vw] max-w-sm sm:max-w-md rounded-xl">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-bold text-white">
+                Bem-vindo ao Casino Bet dos Crias
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setShowDepositModal(false);
+                  navigate('/');
+                }}
+                className="h-8 w-8 text-white hover:text-casino-gold"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="text-white text-center py-4 px-1">
+            <p className="text-base leading-relaxed">
+              Faça um depósito mínimo de R$ 10,00 para ativar o bônus e liberar o acesso aos jogos disponíveis na plataforma.
+            </p>
+          </div>
+          <Button 
+            onClick={() => {
+              setShowDepositModal(false);
+              navigate('/');
+            }}
+            className="w-full bg-casino-gold hover:bg-casino-gold/80 text-black font-bold"
+          >
+            Entendi
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
