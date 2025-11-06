@@ -183,6 +183,21 @@ export type Database = {
         }
         Relationships: []
       }
+      deposit_processing_log: {
+        Row: {
+          deposit_id: string
+          processed_at: string
+        }
+        Insert: {
+          deposit_id: string
+          processed_at?: string
+        }
+        Update: {
+          deposit_id?: string
+          processed_at?: string
+        }
+        Relationships: []
+      }
       deposits: {
         Row: {
           amount: number
@@ -561,6 +576,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      apply_coupon_bonus: {
+        Args: { p_coupon_id: string; p_user_id: string }
+        Returns: undefined
       }
       can_use_coupon: {
         Args: { p_coupon_code: string; p_user_id: string }

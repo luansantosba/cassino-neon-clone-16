@@ -7,6 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import BonusModal from "@/components/BonusModal";
 import { useBonusCheck, checkGameAccess } from "@/hooks/useBonusCheck";
+import { useDepositCheck } from "@/hooks/useDepositCheck";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { X } from "lucide-react";
 
 const DoubleGame = () => {
   const navigate = useNavigate();
@@ -25,6 +28,16 @@ const DoubleGame = () => {
   const [hasBet, setHasBet] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState({ title: '', message: '', type: 'info' as 'success' | 'error' | 'info' });
+  const [showDepositModal, setShowDepositModal] = useState(false);
+
+  const { hasMinimumDeposit, isLoading: isCheckingDeposit } = useDepositCheck(userId);
+
+  // Check deposit requirement on mount
+  useEffect(() => {
+    if (!isCheckingDeposit && !hasMinimumDeposit && userId) {
+      setShowDepositModal(true);
+    }
+  }, [hasMinimumDeposit, isCheckingDeposit, userId]);
 
   // Load user data and balance
   useEffect(() => {
@@ -147,8 +160,8 @@ const DoubleGame = () => {
       return losingNumbers[Math.floor(Math.random() * losingNumbers.length)];
     }
 
-    // House edge: 77% casa ganha, 23% jogador ganha
-    const shouldPlayerWin = Math.random() < 0.23;
+    // House edge: 60% casa ganha, 40% jogador ganha, NUNCA branco
+    const shouldPlayerWin = Math.random() < 0.40;
     console.log(`RNG - Player bet: ${playerBetColor}, Should win: ${shouldPlayerWin}`);
 
     if (shouldPlayerWin) {
@@ -161,18 +174,19 @@ const DoubleGame = () => {
         return blackNumbers[Math.floor(Math.random() * blackNumbers.length)];
       }
     } else {
-      // Jogador perde - dá cor oposta (ou branco)
+      // Jogador perde - dá cor oposta (NUNCA branco)
       if (playerBetColor === 'red') {
-        const losingNumbers = [0, 2, 4, 6, 8, 10, 12, 14];
+        const losingNumbers = [2, 4, 6, 8, 10, 12, 14];
         return losingNumbers[Math.floor(Math.random() * losingNumbers.length)];
       } else if (playerBetColor === 'black') {
-        const losingNumbers = [0, 1, 3, 5, 7, 9, 11, 13];
+        const losingNumbers = [1, 3, 5, 7, 9, 11, 13];
         return losingNumbers[Math.floor(Math.random() * losingNumbers.length)];
       }
     }
 
-    // Fallback - aleatório 0-14
-    return Math.floor(Math.random() * 15);
+    // Fallback - aleatório (nunca branco)
+    const nonWhiteNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+    return nonWhiteNumbers[Math.floor(Math.random() * nonWhiteNumbers.length)];
   };
 
   const calculatePayout = (winningNumber: number, betColor: string, betAmount: number) => {
