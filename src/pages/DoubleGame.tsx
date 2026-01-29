@@ -6,9 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import BonusModal from "@/components/BonusModal";
 import { useBonusCheck } from "@/hooks/useBonusCheck";
-import { useDepositCheck } from "@/hooks/useDepositCheck";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 // Chip values for betting
@@ -26,8 +23,10 @@ const DoubleGame = () => {
   const [useRealBalance, setUseRealBalance] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedChip, setSelectedChip] = useState(1);
+  const [showChipSelector, setShowChipSelector] = useState(false);
   const [colorBets, setColorBets] = useState<{ red: number; black: number; white: number }>({ red: 0, black: 0, white: 0 });
   const [numberBets, setNumberBets] = useState<{ [key: number]: number }>({});
+  const [numberBetCounts, setNumberBetCounts] = useState<{ [key: number]: number }>({}); // Track number of bets per number
   const [isSpinning, setIsSpinning] = useState(false);
   const [history, setHistory] = useState<number[]>([]);
   const [currentNumber, setCurrentNumber] = useState<number | null>(null);
@@ -35,21 +34,12 @@ const DoubleGame = () => {
   const [isBettingPhase, setIsBettingPhase] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState({ title: '', message: '', type: 'info' as 'success' | 'error' | 'info' });
-  const [showDepositModal, setShowDepositModal] = useState(false);
   const [multipliers, setMultipliers] = useState<{ [key: number]: number }>({});
   const [showMultiplierAnimation, setShowMultiplierAnimation] = useState(false);
   const [lastWinAmount, setLastWinAmount] = useState(0);
   const [showWinAnimation, setShowWinAnimation] = useState(false);
 
-  const { hasMinimumDeposit, isLoading: isCheckingDeposit } = useDepositCheck(userId);
   const bonusData = useBonusCheck(userId);
-
-  // Check deposit requirement on mount
-  useEffect(() => {
-    if (!isCheckingDeposit && !hasMinimumDeposit && userId) {
-      setShowDepositModal(true);
-    }
-  }, [hasMinimumDeposit, isCheckingDeposit, userId]);
 
   // Load user data and balance
   useEffect(() => {
@@ -196,12 +186,12 @@ const DoubleGame = () => {
       totalPayout += colorBets.black * 2; // 2X for black
     }
     if (winningNumber === 0 && colorBets.white > 0) {
-      totalPayout += colorBets.white * 20; // 20X for white (direct bet)
+      totalPayout += colorBets.white * 14; // 14X for white
     }
     
     // Number bets - exact number pays 20X base, or multiplier if present
     if (numberBets[winningNumber]) {
-      const baseMultiplier = winningNumber === 0 ? 20 : 20; // All numbers pay 20X base
+      const baseMultiplier = 20; // All numbers pay 20X base
       const extraMultiplier = currentMultipliers[winningNumber] || 1;
       const finalMultiplier = extraMultiplier > 1 ? extraMultiplier : baseMultiplier;
       totalPayout += numberBets[winningNumber] * finalMultiplier;
@@ -228,9 +218,16 @@ const DoubleGame = () => {
     }));
   };
 
-  // Place bet on number
+  // Place bet on number (max 3 chips per number)
   const placeBetOnNumber = (number: number) => {
     if (isSpinning || !isBettingPhase) return;
+    
+    // Check if already has 3 bets on this number
+    const currentBetCount = numberBetCounts[number] || 0;
+    if (currentBetCount >= 3) {
+      toast.error('Máximo de 3 fichas por número!');
+      return;
+    }
     
     const currentBal = getCurrentBalance();
     const totalBet = getTotalBet();
@@ -244,12 +241,17 @@ const DoubleGame = () => {
       ...prev,
       [number]: (prev[number] || 0) + selectedChip
     }));
+    setNumberBetCounts(prev => ({
+      ...prev,
+      [number]: currentBetCount + 1
+    }));
   };
 
   // Clear all bets
   const clearBets = () => {
     setColorBets({ red: 0, black: 0, white: 0 });
     setNumberBets({});
+    setNumberBetCounts({});
   };
 
   // Deterministic animation
@@ -443,7 +445,7 @@ const DoubleGame = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-gray-900 text-white pb-4">
+    <div className="min-h-screen bg-black text-white pb-4">
       <BonusModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -453,11 +455,11 @@ const DoubleGame = () => {
       />
       
       {/* Header */}
-      <div className="bg-black/50 p-3 flex items-center justify-between backdrop-blur-sm">
+      <div className="bg-black/80 p-3 flex items-center justify-between backdrop-blur-sm border-b border-gray-800">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/menu")}
           className="text-white hover:bg-white/10"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -499,19 +501,18 @@ const DoubleGame = () => {
 
       {/* Betting Timer */}
       <div className="px-4 py-2">
-        <div className="bg-black/30 rounded-lg p-3">
+        <div className="bg-gray-900/80 rounded-lg p-3">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-gray-400">
               {isBettingPhase ? 'Faça suas apostas!' : isSpinning ? 'Girando...' : 'Aguarde...'}
             </span>
-            <span className={`text-lg font-bold ${bettingTimeLeft <= 5 ? 'text-red-500 animate-pulse' : 'text-yellow-400'}`}>
-              {isBettingPhase ? `${bettingTimeLeft}s` : '--'}
-            </span>
           </div>
-          <Progress 
-            value={isBettingPhase ? (bettingTimeLeft / 15) * 100 : 0} 
-            className="h-2 bg-gray-700"
-          />
+          <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-green-500 transition-all duration-1000 ease-linear"
+              style={{ width: isBettingPhase ? `${(bettingTimeLeft / 15) * 100}%` : '0%' }}
+            />
+          </div>
         </div>
       </div>
 
@@ -581,9 +582,9 @@ const DoubleGame = () => {
         </div>
       </div>
 
-      {/* Color Betting Area */}
+      {/* Color Betting Area - Only Red and Black, no White */}
       <div className="px-4 mb-4">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => placeBetOnColor('red')}
             disabled={isSpinning || !isBettingPhase}
@@ -597,23 +598,6 @@ const DoubleGame = () => {
             {colorBets.red > 0 && (
               <div className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
                 {colorBets.red}
-              </div>
-            )}
-          </button>
-          
-          <button
-            onClick={() => placeBetOnColor('white')}
-            disabled={isSpinning || !isBettingPhase}
-            className={`relative h-16 rounded-lg font-bold text-black transition-all ${
-              colorBets.white > 0 ? 'ring-2 ring-yellow-400' : ''
-            } bg-gradient-to-b from-white to-gray-200 hover:from-gray-100 hover:to-gray-300 disabled:opacity-50`}
-          >
-            <span className="text-xs">BRANCO</span>
-            <br />
-            <span className="text-sm">20X</span>
-            {colorBets.white > 0 && (
-              <div className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                {colorBets.white}
               </div>
             )}
           </button>
@@ -637,40 +621,17 @@ const DoubleGame = () => {
         </div>
       </div>
 
-      {/* Number Betting Grid */}
+      {/* Number Betting Grid - Without White/0 */}
       <div className="px-4 mb-4">
-        <div className="bg-black/30 rounded-xl p-3">
+        <div className="bg-gray-900/80 rounded-xl p-3">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-yellow-400">APOSTE NO NÚMERO EXATO (20X)</h3>
+            <h3 className="text-sm font-bold text-yellow-400">APOSTE NO NÚMERO EXATO (20X) - Máx 3 fichas</h3>
             {Object.keys(multipliers).length > 0 && (
               <div className={`flex items-center gap-1 text-yellow-400 ${showMultiplierAnimation ? 'animate-pulse' : ''}`}>
                 <Zap className="h-4 w-4" />
-                <span className="text-xs">RAIOS ATIVOS!</span>
+                <span className="text-xs">RAIOS!</span>
               </div>
             )}
-          </div>
-          
-          {/* White/0 special */}
-          <div className="flex justify-center mb-3">
-            <button
-              onClick={() => placeBetOnNumber(0)}
-              disabled={isSpinning || !isBettingPhase}
-              className={`relative w-14 h-14 rounded-lg font-bold text-black transition-all ${
-                numberBets[0] ? 'ring-2 ring-yellow-400' : ''
-              } bg-gradient-to-b from-white to-gray-200 hover:from-gray-100 hover:to-gray-300 disabled:opacity-50`}
-            >
-              0
-              {multipliers[0] && (
-                <div className="absolute -top-1 -right-1 bg-yellow-400 text-black text-[10px] font-bold px-1 rounded animate-pulse">
-                  <Zap className="h-3 w-3 inline" />{multipliers[0]}X
-                </div>
-              )}
-              {numberBets[0] && (
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-purple-500 text-white text-[10px] font-bold rounded px-1">
-                  R${numberBets[0]}
-                </div>
-              )}
-            </button>
           </div>
           
           {/* Numbers 1-14 grid */}
@@ -678,6 +639,7 @@ const DoubleGame = () => {
             {Array.from({ length: 14 }, (_, i) => i + 1).map(num => {
               const isRed = num % 2 === 1;
               const hasMultiplier = multipliers[num];
+              const betCount = numberBetCounts[num] || 0;
               
               return (
                 <button
@@ -699,7 +661,12 @@ const DoubleGame = () => {
                   )}
                   {numberBets[num] && (
                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-purple-500 text-white text-[8px] font-bold rounded px-0.5">
-                      {numberBets[num]}
+                      R${numberBets[num]}
+                    </div>
+                  )}
+                  {betCount > 0 && (
+                    <div className="absolute top-0 left-0 text-[8px] text-yellow-300 font-bold">
+                      {betCount}/3
                     </div>
                   )}
                 </button>
@@ -709,31 +676,43 @@ const DoubleGame = () => {
         </div>
       </div>
 
-      {/* Chip Selection */}
+      {/* Chip Selection - Click to expand */}
       <div className="px-4 mb-4">
-        <div className="bg-black/30 rounded-xl p-3">
-          <h3 className="text-xs text-gray-400 mb-2 text-center">SELECIONE A FICHA</h3>
-          <div className="flex justify-center gap-2 flex-wrap">
-            {CHIP_VALUES.map(value => (
-              <button
-                key={value}
-                onClick={() => setSelectedChip(value)}
-                className={`w-12 h-12 rounded-full font-bold text-sm transition-all ${
-                  selectedChip === value
-                    ? 'bg-yellow-400 text-black scale-110 shadow-lg shadow-yellow-400/50'
-                    : 'bg-gradient-to-b from-purple-600 to-purple-800 text-white hover:scale-105'
-                }`}
-              >
-                {value}
-              </button>
-            ))}
+        <div className="bg-gray-900/80 rounded-xl p-3">
+          <h3 className="text-xs text-gray-400 mb-2 text-center">FICHA SELECIONADA</h3>
+          <div className="flex justify-center gap-2 flex-wrap relative">
+            {/* Main chip - always visible */}
+            <button
+              onClick={() => setShowChipSelector(!showChipSelector)}
+              className="w-14 h-14 rounded-full font-bold text-sm transition-all bg-yellow-400 text-black scale-110 shadow-lg shadow-yellow-400/50 border-2 border-yellow-300"
+            >
+              R${selectedChip}
+            </button>
+            
+            {/* Other chips - show on click */}
+            {showChipSelector && (
+              <div className="absolute top-16 left-1/2 -translate-x-1/2 flex gap-2 bg-gray-800 p-2 rounded-lg shadow-xl z-20">
+                {CHIP_VALUES.filter(v => v !== selectedChip).map(value => (
+                  <button
+                    key={value}
+                    onClick={() => {
+                      setSelectedChip(value);
+                      setShowChipSelector(false);
+                    }}
+                    className="w-12 h-12 rounded-full font-bold text-sm transition-all bg-gradient-to-b from-green-600 to-green-800 text-white hover:scale-105 border-2 border-green-400"
+                  >
+                    R${value}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Total Bet & Clear */}
       <div className="px-4 mb-4">
-        <div className="flex items-center justify-between bg-black/30 rounded-lg p-3">
+        <div className="flex items-center justify-between bg-gray-900/80 rounded-lg p-3">
           <div>
             <span className="text-sm text-gray-400">Aposta Total:</span>
             <span className="ml-2 text-lg font-bold text-yellow-400">R$ {getTotalBet().toFixed(2)}</span>
@@ -749,49 +728,6 @@ const DoubleGame = () => {
           </Button>
         </div>
       </div>
-
-      {/* Deposit Modal */}
-      <Dialog open={showDepositModal} onOpenChange={(open) => {
-        if (!open) {
-          navigate('/');
-        }
-        setShowDepositModal(open);
-      }}>
-        <DialogContent className="bg-gray-900 border-yellow-500 w-[92vw] max-w-sm sm:max-w-md rounded-xl">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-xl font-bold text-white">
-                Bem-vindo ao Casino Bet dos Crias
-              </DialogTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setShowDepositModal(false);
-                  navigate('/');
-                }}
-                className="h-8 w-8 text-white hover:text-yellow-400"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </DialogHeader>
-          <div className="text-white text-center py-4 px-1">
-            <p className="text-base leading-relaxed">
-              Faça um depósito mínimo de R$ 10,00 para ativar o bônus e liberar o acesso aos jogos disponíveis na plataforma.
-            </p>
-          </div>
-          <Button 
-            onClick={() => {
-              setShowDepositModal(false);
-              navigate('/');
-            }}
-            className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-bold"
-          >
-            Entendi
-          </Button>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
