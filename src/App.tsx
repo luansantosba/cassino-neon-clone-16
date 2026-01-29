@@ -51,8 +51,9 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<DoubleGame />} />
             <Route path="/double-x" element={<DoubleGame />} />
+            <Route path="/home" element={<Index />} />
             <Route path="/bonus" element={<BonusPage />} />
             <Route path="/bonus/regras" element={<BonusRulesPage />} />
             <Route path="/login" element={<LoginPage />} />
