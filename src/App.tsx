@@ -5,18 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoadingScreen from "@/components/LoadingScreen";
 import Index from "./pages/Index";
-import ScratchCardGame from "./pages/ScratchCardGame";
-import ScratchCard5to2500Game from "./pages/ScratchCard5to2500Game";
-import ScratchCard20to50000Game from "./pages/ScratchCard20to50000Game";
 import DoubleGame from "./pages/DoubleGame";
 
 import BonusPage from "./pages/BonusPage";
 import BonusRulesPage from "./pages/BonusRulesPage";
-import ScratchCardRulesPage from "./pages/ScratchCardRulesPage";
-import ScratchCard5to2500RulesPage from "./pages/ScratchCard5to2500RulesPage";
-import ScratchCard20to50000RulesPage from "./pages/ScratchCard20to50000RulesPage";
-import ScratchCard10to15000Game from "./pages/ScratchCard10to15000Game";
-import ScratchCard10to15000RulesPage from "./pages/ScratchCard10to15000RulesPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DepositPage from "./pages/DepositPage";
@@ -60,16 +52,7 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/raspadinha" element={<ScratchCardGame />} />
-            <Route path="/raspadinha/regras" element={<ScratchCardRulesPage />} />
-            <Route path="/raspadinha-5-para-2500" element={<ScratchCard5to2500Game />} />
-            <Route path="/raspadinha-5-para-2500/regras" element={<ScratchCard5to2500RulesPage />} />
-            <Route path="/raspadinha-10-para-15000" element={<ScratchCard10to15000Game />} />
-            <Route path="/raspadinha-10-para-15000/regras" element={<ScratchCard10to15000RulesPage />} />
-            <Route path="/raspadinha-20-para-50000" element={<ScratchCard20to50000Game />} />
-            <Route path="/raspadinha-20-para-50000/regras" element={<ScratchCard20to50000RulesPage />} />
-            
-            <Route path="/double" element={<DoubleGame />} />
+            <Route path="/double-x" element={<DoubleGame />} />
             <Route path="/bonus" element={<BonusPage />} />
             <Route path="/bonus/regras" element={<BonusRulesPage />} />
             <Route path="/login" element={<LoginPage />} />
