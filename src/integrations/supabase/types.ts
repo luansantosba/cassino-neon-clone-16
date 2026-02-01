@@ -279,6 +279,57 @@ export type Database = {
         }
         Relationships: []
       }
+      double_x_game_state: {
+        Row: {
+          current_multipliers: Json | null
+          current_phase: string
+          current_result: number | null
+          id: number
+          phase_ends_at: string
+          updated_at: string
+        }
+        Insert: {
+          current_multipliers?: Json | null
+          current_phase?: string
+          current_result?: number | null
+          id?: number
+          phase_ends_at?: string
+          updated_at?: string
+        }
+        Update: {
+          current_multipliers?: Json | null
+          current_phase?: string
+          current_result?: number | null
+          id?: number
+          phase_ends_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      double_x_rounds: {
+        Row: {
+          created_at: string
+          id: string
+          multipliers: Json | null
+          result: number
+          round_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          multipliers?: Json | null
+          result: number
+          round_number?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          multipliers?: Json | null
+          result?: number
+          round_number?: number
+        }
+        Relationships: []
+      }
       matches: {
         Row: {
           championship_id: string | null
