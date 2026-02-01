@@ -1,18 +1,33 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Zap, Wallet } from "lucide-react";
+import { ArrowLeft, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import BonusModal from "@/components/BonusModal";
 import { useBonusCheck } from "@/hooks/useBonusCheck";
-import { Progress } from "@/components/ui/progress";
+import LightningEffect from "@/components/LightningEffect";
+import BotPlayersList from "@/components/BotPlayersList";
 
 // Chip values for betting
 const CHIP_VALUES = [1, 5, 10, 25, 50, 100];
 
 // Multiplier values that can appear on numbers (5X to 1000X)
 const MULTIPLIER_VALUES = [5, 10, 20, 50, 100, 200, 500, 1000];
+
+interface GameState {
+  current_phase: 'betting' | 'spinning' | 'result';
+  phase_ends_at: string;
+  current_result: number | null;
+  current_multipliers: Record<number, number>;
+}
+
+interface GameRound {
+  id: string;
+  result: number;
+  multipliers: Record<number, number>;
+  created_at: string;
+}
 
 const DoubleGame = () => {
   const navigate = useNavigate();
@@ -22,11 +37,12 @@ const DoubleGame = () => {
   const [bonusBalance, setBonusBalance] = useState(0);
   const [useRealBalance, setUseRealBalance] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('');
   const [selectedChip, setSelectedChip] = useState(1);
   const [showChipSelector, setShowChipSelector] = useState(false);
-  const [colorBets, setColorBets] = useState<{ red: number; black: number; white: number }>({ red: 0, black: 0, white: 0 });
+  const [colorBets, setColorBets] = useState<{ red: number; black: number }>({ red: 0, black: 0 });
   const [numberBets, setNumberBets] = useState<{ [key: number]: number }>({});
-  const [numberBetCounts, setNumberBetCounts] = useState<{ [key: number]: number }>({}); // Track number of bets per number
+  const [exactNumbersBetCount, setExactNumbersBetCount] = useState(0); // Track total exact numbers bet on (max 2)
   const [isSpinning, setIsSpinning] = useState(false);
   const [history, setHistory] = useState<number[]>([]);
   const [currentNumber, setCurrentNumber] = useState<number | null>(null);
@@ -35,9 +51,10 @@ const DoubleGame = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState({ title: '', message: '', type: 'info' as 'success' | 'error' | 'info' });
   const [multipliers, setMultipliers] = useState<{ [key: number]: number }>({});
-  const [showMultiplierAnimation, setShowMultiplierAnimation] = useState(false);
   const [lastWinAmount, setLastWinAmount] = useState(0);
   const [showWinAnimation, setShowWinAnimation] = useState(false);
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [betDeducted, setBetDeducted] = useState(false);
 
   const bonusData = useBonusCheck(userId);
 
@@ -54,13 +71,14 @@ const DoubleGame = () => {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('balance, bonus_balance')
+        .select('balance, bonus_balance, full_name')
         .eq('id', user.id)
         .single();
 
       if (profile) {
         setRealBalance(profile.balance || 0);
         setBonusBalance(profile.bonus_balance || 0);
+        setUserName(profile.full_name || 'Jogador');
       }
     };
 
@@ -73,15 +91,9 @@ const DoubleGame = () => {
   const spinStartTime = useRef<number>();
   const currentPosition = useRef<number>(0);
   const targetNumber = useRef<number | null>(null);
-  const bettingIntervalRef = useRef<NodeJS.Timeout>();
+  const gameLoopRef = useRef<NodeJS.Timeout>();
   const decelerationStartPosition = useRef<number>(0);
   const spinDuration = 5000;
-
-  // Generate numbers 0-14 with colors (0 is white)
-  const numbers = Array.from({ length: 15 }, (_, i) => ({
-    value: i,
-    color: i === 0 ? 'white' : i % 2 === 1 ? 'red' : 'black'
-  }));
 
   // Create extended roulette for infinite scroll effect (without white/0 in the strip)
   const stripNumbers = Array.from({ length: 14 }, (_, i) => ({
@@ -110,9 +122,16 @@ const DoubleGame = () => {
 
   // Get total bet amount
   const getTotalBet = () => {
-    const colorTotal = colorBets.red + colorBets.black + colorBets.white;
+    const colorTotal = colorBets.red + colorBets.black;
     const numberTotal = Object.values(numberBets).reduce((a, b) => a + b, 0);
     return colorTotal + numberTotal;
+  };
+
+  // Get player's dominant color bet
+  const getPlayerColorBet = (): 'red' | 'black' | null => {
+    if (colorBets.red > colorBets.black) return 'red';
+    if (colorBets.black > colorBets.red) return 'black';
+    return null;
   };
 
   // Update balance in database
@@ -133,67 +152,183 @@ const DoubleGame = () => {
     }
   };
 
-  // Generate random multipliers for some numbers (not every round)
-  const generateMultipliers = () => {
-    const newMultipliers: { [key: number]: number } = {};
-    
-    // 30% chance to have multipliers this round
-    if (Math.random() < 0.30) {
-      // Pick 1-3 random numbers to have multipliers
-      const numMultipliers = Math.floor(Math.random() * 3) + 1;
-      const availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
-      
-      for (let i = 0; i < numMultipliers && availableNumbers.length > 0; i++) {
-        const randomIndex = Math.floor(Math.random() * availableNumbers.length);
-        const number = availableNumbers.splice(randomIndex, 1)[0];
-        
-        // Lower multipliers are more common
-        const multiplierIndex = Math.floor(Math.pow(Math.random(), 2) * MULTIPLIER_VALUES.length);
-        newMultipliers[number] = MULTIPLIER_VALUES[multiplierIndex];
-      }
-    }
-    
-    return newMultipliers;
-  };
-
-  // Load game history from localStorage
-  const loadGameHistory = () => {
+  // Fetch global game state and history
+  const fetchGameState = async () => {
     try {
-      const saved = localStorage.getItem('doubleXGameHistory');
-      const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed : [];
+      // Get game state
+      const { data: state } = await supabase
+        .from('double_x_game_state')
+        .select('*')
+        .eq('id', 1)
+        .single();
+
+      // Get history from rounds
+      const { data: rounds } = await supabase
+        .from('double_x_rounds')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (state) {
+        setGameState(state as GameState);
+        setMultipliers((state.current_multipliers as Record<number, number>) || {});
+        
+        // Calculate time left
+        const now = new Date().getTime();
+        const endsAt = new Date(state.phase_ends_at).getTime();
+        const timeLeft = Math.max(0, Math.floor((endsAt - now) / 1000));
+        
+        if (state.current_phase === 'betting') {
+          setIsBettingPhase(true);
+          setIsSpinning(false);
+          setBettingTimeLeft(timeLeft);
+        } else if (state.current_phase === 'spinning') {
+          setIsBettingPhase(false);
+          setIsSpinning(true);
+          if (state.current_result !== null && targetNumber.current !== state.current_result) {
+            targetNumber.current = state.current_result;
+            startRouletteAnimation();
+          }
+        } else if (state.current_phase === 'result') {
+          setIsBettingPhase(false);
+          setIsSpinning(false);
+          setCurrentNumber(state.current_result);
+        }
+      }
+
+      if (rounds) {
+        setHistory(rounds.map((r: { result: number }) => r.result));
+      }
     } catch (error) {
-      console.error('Error loading game history:', error);
-      return [];
+      console.error('Error fetching game state:', error);
     }
   };
 
-  // Generate RNG result - fair random 0-14
-  const generateRNGResult = () => {
-    return Math.floor(Math.random() * 15); // 0-14, fair RNG
+  // Advance game state (call edge function)
+  const advanceGame = async () => {
+    try {
+      const response = await supabase.functions.invoke('double-x-engine', {
+        body: { action: 'advance_game' }
+      });
+      
+      if (response.data?.phase === 'spinning' && response.data?.result !== undefined) {
+        targetNumber.current = response.data.result;
+        setMultipliers(response.data.multipliers || {});
+      }
+    } catch (error) {
+      console.error('Error advancing game:', error);
+    }
   };
 
-  // Calculate payout for all bets
+  // Game loop - check state and advance
+  useEffect(() => {
+    fetchGameState();
+    
+    // Poll game state every second
+    gameLoopRef.current = setInterval(async () => {
+      await advanceGame();
+      await fetchGameState();
+    }, 1000);
+
+    return () => {
+      if (gameLoopRef.current) {
+        clearInterval(gameLoopRef.current);
+      }
+    };
+  }, []);
+
+  // Subscribe to realtime updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('double-x-updates')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'double_x_game_state' },
+        (payload) => {
+          const newState = payload.new as GameState;
+          if (newState) {
+            setGameState(newState);
+            setMultipliers((newState.current_multipliers as Record<number, number>) || {});
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'double_x_rounds' },
+        (payload) => {
+          const newRound = payload.new as GameRound;
+          if (newRound) {
+            setHistory(prev => [newRound.result, ...prev].slice(0, 20));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Handle phase transitions
+  useEffect(() => {
+    if (!gameState) return;
+
+    if (gameState.current_phase === 'spinning' && !betDeducted) {
+      // Deduct bets when spinning starts
+      const totalBet = getTotalBet();
+      if (totalBet > 0) {
+        if (useRealBalance) {
+          updateBalance(realBalance - totalBet, bonusBalance);
+        } else {
+          updateBalance(realBalance, bonusBalance - totalBet);
+        }
+        setBetDeducted(true);
+      }
+    } else if (gameState.current_phase === 'result' && gameState.current_result !== null) {
+      // Calculate winnings
+      const winningNumber = gameState.current_result;
+      const payout = calculateTotalPayout(winningNumber, multipliers);
+      
+      if (payout > 0) {
+        setLastWinAmount(payout);
+        setShowWinAnimation(true);
+        setTimeout(() => setShowWinAnimation(false), 3000);
+        
+        if (useRealBalance) {
+          updateBalance(realBalance + payout, bonusBalance);
+        } else {
+          updateBalance(realBalance, bonusBalance + payout);
+        }
+        
+        toast.success(`Você ganhou R$ ${payout.toFixed(2)}!`);
+      }
+      
+      setCurrentNumber(winningNumber);
+    } else if (gameState.current_phase === 'betting') {
+      // Reset for new round
+      clearBets();
+      setBetDeducted(false);
+      setCurrentNumber(null);
+    }
+  }, [gameState?.current_phase, gameState?.current_result]);
+
+  // Calculate payout - Red/Black 2X, Exact 14X, Multiplier pays multiplier value
   const calculateTotalPayout = (winningNumber: number, currentMultipliers: { [key: number]: number }) => {
     let totalPayout = 0;
     const winningColor = winningNumber === 0 ? 'white' : winningNumber % 2 === 1 ? 'red' : 'black';
     
-    // Color bets
+    // Color bets - 2X
     if (winningColor === 'red' && colorBets.red > 0) {
-      totalPayout += colorBets.red * 2; // 2X for red (returns bet + 1x profit)
+      totalPayout += colorBets.red * 2;
     }
     if (winningColor === 'black' && colorBets.black > 0) {
-      totalPayout += colorBets.black * 2; // 2X for black
-    }
-    if (winningNumber === 0 && colorBets.white > 0) {
-      totalPayout += colorBets.white * 14; // 14X for white
+      totalPayout += colorBets.black * 2;
     }
     
-    // Number bets - exact number pays 20X base, or multiplier if present
+    // Number bets - exact number pays 14X base, or multiplier if present
     if (numberBets[winningNumber]) {
-      const baseMultiplier = 20; // All numbers pay 20X base
-      const extraMultiplier = currentMultipliers[winningNumber] || 1;
-      const finalMultiplier = extraMultiplier > 1 ? extraMultiplier : baseMultiplier;
+      const hasMultiplier = currentMultipliers[winningNumber];
+      const finalMultiplier = hasMultiplier || 14; // 14X base, or multiplier value
       totalPayout += numberBets[winningNumber] * finalMultiplier;
     }
     
@@ -201,7 +336,7 @@ const DoubleGame = () => {
   };
 
   // Place bet on color
-  const placeBetOnColor = (color: 'red' | 'black' | 'white') => {
+  const placeBetOnColor = (color: 'red' | 'black') => {
     if (isSpinning || !isBettingPhase) return;
     
     const currentBal = getCurrentBalance();
@@ -218,14 +353,15 @@ const DoubleGame = () => {
     }));
   };
 
-  // Place bet on number (max 3 chips per number)
+  // Place bet on number (max 2 different numbers)
   const placeBetOnNumber = (number: number) => {
     if (isSpinning || !isBettingPhase) return;
     
-    // Check if already has 3 bets on this number
-    const currentBetCount = numberBetCounts[number] || 0;
-    if (currentBetCount >= 3) {
-      toast.error('Máximo de 3 fichas por número!');
+    // Check if this is a new number bet
+    const isNewNumber = !numberBets[number];
+    
+    if (isNewNumber && exactNumbersBetCount >= 2) {
+      toast.error('Máximo de 2 números exatos!');
       return;
     }
     
@@ -241,17 +377,32 @@ const DoubleGame = () => {
       ...prev,
       [number]: (prev[number] || 0) + selectedChip
     }));
-    setNumberBetCounts(prev => ({
-      ...prev,
-      [number]: currentBetCount + 1
-    }));
+    
+    if (isNewNumber) {
+      setExactNumbersBetCount(prev => prev + 1);
+    }
   };
 
   // Clear all bets
   const clearBets = () => {
-    setColorBets({ red: 0, black: 0, white: 0 });
+    setColorBets({ red: 0, black: 0 });
     setNumberBets({});
-    setNumberBetCounts({});
+    setExactNumbersBetCount(0);
+  };
+
+  // Start roulette animation
+  const startRouletteAnimation = () => {
+    setIsSpinning(true);
+    spinStartTime.current = undefined;
+    decelerationStartPosition.current = 0;
+    const containerWidth = rouletteRef.current?.parentElement?.offsetWidth || 350;
+    currentPosition.current = -(containerWidth * 2);
+    
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+    
+    animationRef.current = requestAnimationFrame(animateRoulette);
   };
 
   // Deterministic animation
@@ -261,7 +412,7 @@ const DoubleGame = () => {
     }
 
     const elapsed = timestamp - spinStartTime.current;
-    const numberWidth = 52; // Width including margin
+    const numberWidth = 52;
 
     if (!rouletteRef.current || targetNumber.current === null) {
       if (elapsed < spinDuration) {
@@ -274,7 +425,6 @@ const DoubleGame = () => {
       const progress = elapsed / spinDuration;
       
       if (progress < 0.7) {
-        // Spinning phase - constant speed
         const baseSpeed = 30;
         currentPosition.current -= baseSpeed;
         
@@ -282,7 +432,6 @@ const DoubleGame = () => {
           currentPosition.current += (numberWidth * 150);
         }
       } else {
-        // Deceleration phase
         const containerCenter = (rouletteRef.current.parentElement?.offsetWidth || 0) / 2;
         const decelerationProgress = (progress - 0.7) / 0.3;
         
@@ -290,13 +439,10 @@ const DoubleGame = () => {
           decelerationStartPosition.current = currentPosition.current;
         }
         
-        // Find target number in extended array (accounting for 0 not being in strip)
         let targetIndex = -1;
         const targetValue = targetNumber.current;
         
-        // If target is 0 (white), we need special handling - pick a random stopping point
         if (targetValue === 0) {
-          // Stop between numbers to indicate white/0 won
           targetIndex = Math.floor(extendedNumbers.length / 2);
         } else {
           for (let i = 0; i < extendedNumbers.length; i++) {
@@ -319,124 +465,16 @@ const DoubleGame = () => {
       
       rouletteRef.current.style.transform = `translateX(${currentPosition.current}px)`;
       animationRef.current = requestAnimationFrame(animateRoulette);
-      
     } else {
-      // Animation complete
-      const winningNumber = targetNumber.current!;
-      setCurrentNumber(winningNumber);
-      
-      // Calculate payout
-      const payout = calculateTotalPayout(winningNumber, multipliers);
-      
-      if (payout > 0) {
-        setLastWinAmount(payout);
-        setShowWinAnimation(true);
-        setTimeout(() => setShowWinAnimation(false), 3000);
-        
-        // Add winnings to balance
-        if (useRealBalance) {
-          updateBalance(realBalance + payout, bonusBalance);
-        } else {
-          updateBalance(realBalance, bonusBalance + payout);
-        }
-        
-        toast.success(`Você ganhou R$ ${payout.toFixed(2)}!`);
-      }
-      
-      // Update game history
-      const updatedGameHistory = [winningNumber, ...history].slice(0, 20);
-      setHistory(updatedGameHistory);
-      localStorage.setItem('doubleXGameHistory', JSON.stringify(updatedGameHistory));
-      
-      // Reset for next round
       setIsSpinning(false);
-      clearBets();
-      targetNumber.current = null;
-      
-      // Start new betting phase after delay
-      setTimeout(() => {
-        startBettingPhase();
-      }, 3000);
     }
   };
 
-  // Start betting phase with timer
-  const startBettingPhase = useCallback(() => {
-    setIsBettingPhase(true);
-    setBettingTimeLeft(15);
-    setMultipliers(generateMultipliers());
-    setShowMultiplierAnimation(true);
-    setTimeout(() => setShowMultiplierAnimation(false), 1500);
-    
-    if (bettingIntervalRef.current) {
-      clearInterval(bettingIntervalRef.current);
-    }
-    
-    bettingIntervalRef.current = setInterval(() => {
-      setBettingTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(bettingIntervalRef.current!);
-          setIsBettingPhase(false);
-          // Start spin automatically
-          setTimeout(() => spinRoulette(), 500);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, []);
-
-  // Spin the roulette
-  const spinRoulette = async () => {
-    const totalBet = getTotalBet();
-    
-    // Deduct bet from balance
-    if (totalBet > 0) {
-      if (useRealBalance) {
-        if (totalBet > realBalance) {
-          toast.error('Saldo insuficiente');
-          startBettingPhase();
-          return;
-        }
-        await updateBalance(realBalance - totalBet, bonusBalance);
-      } else {
-        if (totalBet > bonusBalance) {
-          toast.error('Saldo bônus insuficiente');
-          startBettingPhase();
-          return;
-        }
-        await updateBalance(realBalance, bonusBalance - totalBet);
-      }
-    }
-    
-    // Generate RNG result
-    const result = generateRNGResult();
-    targetNumber.current = result;
-    
-    setIsSpinning(true);
-    setCurrentNumber(null);
-    
-    // Reset animation state
-    spinStartTime.current = undefined;
-    decelerationStartPosition.current = 0;
-    const containerWidth = rouletteRef.current?.parentElement?.offsetWidth || 350;
-    currentPosition.current = -(containerWidth * 2);
-    
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-    
-    animationRef.current = requestAnimationFrame(animateRoulette);
-  };
-
-  // Initialize on mount
+  // Cleanup
   useEffect(() => {
-    setHistory(loadGameHistory());
-    startBettingPhase();
-    
     return () => {
-      if (bettingIntervalRef.current) {
-        clearInterval(bettingIntervalRef.current);
+      if (gameLoopRef.current) {
+        clearInterval(gameLoopRef.current);
       }
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
@@ -499,15 +537,18 @@ const DoubleGame = () => {
         </div>
       </div>
 
-      {/* Betting Timer */}
+      {/* Betting Timer - Green bar only */}
       <div className="px-4 py-2">
         <div className="bg-gray-900/80 rounded-lg p-3">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-gray-400">
-              {isBettingPhase ? 'Faça suas apostas!' : isSpinning ? 'Girando...' : 'Aguarde...'}
+              {isBettingPhase ? 'Faça suas apostas!' : isSpinning ? 'Girando...' : 'Resultado!'}
+            </span>
+            <span className="text-xs text-green-400">
+              🔴 AO VIVO
             </span>
           </div>
-          <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
             <div 
               className="h-full bg-green-500 transition-all duration-1000 ease-linear"
               style={{ width: isBettingPhase ? `${(bettingTimeLeft / 15) * 100}%` : '0%' }}
@@ -516,7 +557,7 @@ const DoubleGame = () => {
         </div>
       </div>
 
-      {/* History */}
+      {/* History - Global persistent */}
       <div className="px-4 py-2">
         <div className="flex gap-1.5 justify-center overflow-x-auto scrollbar-none">
           {history.slice(0, 15).map((num, index) => (
@@ -582,7 +623,7 @@ const DoubleGame = () => {
         </div>
       </div>
 
-      {/* Color Betting Area - Only Red and Black, no White */}
+      {/* Color Betting Area - Only Red and Black */}
       <div className="px-4 mb-4">
         <div className="grid grid-cols-2 gap-3">
           <button
@@ -625,11 +666,10 @@ const DoubleGame = () => {
       <div className="px-4 mb-4">
         <div className="bg-gray-900/80 rounded-xl p-3">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-yellow-400">APOSTE NO NÚMERO EXATO (20X) - Máx 3 fichas</h3>
+            <h3 className="text-sm font-bold text-yellow-400">NÚMERO EXATO (14X) - Máx 2 números</h3>
             {Object.keys(multipliers).length > 0 && (
-              <div className={`flex items-center gap-1 text-yellow-400 ${showMultiplierAnimation ? 'animate-pulse' : ''}`}>
-                <Zap className="h-4 w-4" />
-                <span className="text-xs">RAIOS!</span>
+              <div className="flex items-center gap-1 text-yellow-400 animate-pulse">
+                <span className="text-xs">⚡ RAIOS!</span>
               </div>
             )}
           </div>
@@ -639,7 +679,7 @@ const DoubleGame = () => {
             {Array.from({ length: 14 }, (_, i) => i + 1).map(num => {
               const isRed = num % 2 === 1;
               const hasMultiplier = multipliers[num];
-              const betCount = numberBetCounts[num] || 0;
+              const hasBet = numberBets[num] && numberBets[num] > 0;
               
               return (
                 <button
@@ -647,26 +687,20 @@ const DoubleGame = () => {
                   onClick={() => placeBetOnNumber(num)}
                   disabled={isSpinning || !isBettingPhase}
                   className={`relative h-12 rounded-lg font-bold text-white transition-all ${
-                    numberBets[num] ? 'ring-2 ring-yellow-400' : ''
+                    hasBet ? 'ring-2 ring-yellow-400' : ''
                   } ${isRed 
                     ? 'bg-gradient-to-b from-red-500 to-red-700 hover:from-red-400 hover:to-red-600' 
                     : 'bg-gradient-to-b from-gray-700 to-gray-900 hover:from-gray-600 hover:to-gray-800'
-                  } disabled:opacity-50`}
+                  } disabled:opacity-50 overflow-hidden`}
                 >
-                  {num}
-                  {hasMultiplier && (
-                    <div className={`absolute -top-1 -right-1 bg-yellow-400 text-black text-[8px] font-bold px-0.5 rounded ${showMultiplierAnimation ? 'animate-bounce' : 'animate-pulse'}`}>
-                      <Zap className="h-2 w-2 inline" />{hasMultiplier}X
-                    </div>
-                  )}
-                  {numberBets[num] && (
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-purple-500 text-white text-[8px] font-bold rounded px-0.5">
+                  {/* Lightning effect for multipliers */}
+                  <LightningEffect active={!!hasMultiplier && isBettingPhase} multiplier={hasMultiplier || 0} />
+                  
+                  <span className="relative z-10">{num}</span>
+                  
+                  {hasBet && (
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-purple-500 text-white text-[8px] font-bold rounded px-0.5 z-10">
                       R${numberBets[num]}
-                    </div>
-                  )}
-                  {betCount > 0 && (
-                    <div className="absolute top-0 left-0 text-[8px] text-yellow-300 font-bold">
-                      {betCount}/3
                     </div>
                   )}
                 </button>
@@ -676,36 +710,35 @@ const DoubleGame = () => {
         </div>
       </div>
 
-      {/* Chip Selection - Click to expand */}
+      {/* Realistic Chip Selection - Horizontal */}
       <div className="px-4 mb-4">
         <div className="bg-gray-900/80 rounded-xl p-3">
-          <h3 className="text-xs text-gray-400 mb-2 text-center">FICHA SELECIONADA</h3>
-          <div className="flex justify-center gap-2 flex-wrap relative">
-            {/* Main chip - always visible */}
-            <button
-              onClick={() => setShowChipSelector(!showChipSelector)}
-              className="w-14 h-14 rounded-full font-bold text-sm transition-all bg-yellow-400 text-black scale-110 shadow-lg shadow-yellow-400/50 border-2 border-yellow-300"
-            >
-              R${selectedChip}
-            </button>
-            
-            {/* Other chips - show on click */}
-            {showChipSelector && (
-              <div className="absolute top-16 left-1/2 -translate-x-1/2 flex gap-2 bg-gray-800 p-2 rounded-lg shadow-xl z-20">
-                {CHIP_VALUES.filter(v => v !== selectedChip).map(value => (
-                  <button
-                    key={value}
-                    onClick={() => {
-                      setSelectedChip(value);
-                      setShowChipSelector(false);
-                    }}
-                    className="w-12 h-12 rounded-full font-bold text-sm transition-all bg-gradient-to-b from-green-600 to-green-800 text-white hover:scale-105 border-2 border-green-400"
-                  >
-                    R${value}
-                  </button>
-                ))}
-              </div>
-            )}
+          <h3 className="text-xs text-gray-400 mb-2 text-center">ESCOLHA SUA FICHA</h3>
+          <div className="flex justify-center gap-2 items-center">
+            {CHIP_VALUES.map(value => (
+              <button
+                key={value}
+                onClick={() => {
+                  setSelectedChip(value);
+                  setShowChipSelector(false);
+                }}
+                className={`relative w-11 h-11 rounded-full font-bold text-xs transition-all flex items-center justify-center ${
+                  selectedChip === value
+                    ? 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-yellow-600 text-black scale-110 shadow-lg shadow-yellow-400/50 ring-2 ring-white'
+                    : 'bg-gradient-to-br from-green-500 via-green-600 to-green-800 text-white hover:scale-105 shadow-md'
+                }`}
+                style={{
+                  boxShadow: selectedChip === value 
+                    ? 'inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.3), 0 4px 12px rgba(250, 204, 21, 0.5)'
+                    : 'inset 0 2px 4px rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.4)'
+                }}
+              >
+                <div className="absolute inset-1 rounded-full border-2 border-dashed opacity-30" 
+                  style={{ borderColor: selectedChip === value ? '#000' : '#fff' }} 
+                />
+                <span className="relative z-10">{value}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -727,6 +760,16 @@ const DoubleGame = () => {
             Limpar
           </Button>
         </div>
+      </div>
+
+      {/* Bot Players List */}
+      <div className="px-4 mb-4">
+        <BotPlayersList
+          realPlayerName={userName}
+          realPlayerBet={getPlayerColorBet()}
+          realPlayerAmount={colorBets.red + colorBets.black}
+          isBettingPhase={isBettingPhase}
+        />
       </div>
     </div>
   );
